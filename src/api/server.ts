@@ -12,6 +12,7 @@ import { stateRoutes } from "./routes/state.js";
 import { devicesRouter } from "./routes/devices.js";
 import { lifeEventsRouter } from "./routes/life-events.js";
 import { lifeContextRouter } from "./routes/life-context.js";
+import { notificationIntelligenceRoutes } from "./routes/notification-intelligence.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -47,6 +48,7 @@ app.use("/api/state", stateRoutes);
 app.use("/api/v1/devices", devicesRouter);
 app.use("/api/v1/context", lifeEventsRouter);
 app.use("/api/v1/life-context", lifeContextRouter);
+app.use("/api/notification-intelligence", notificationIntelligenceRoutes);
 
 // Error handling middleware
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
