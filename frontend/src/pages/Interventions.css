@@ -1,0 +1,280 @@
+.interventions-page {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.interventions-header {
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.interventions-header h1 {
+  margin-bottom: 0.5rem;
+}
+
+.interventions-filters {
+  display: flex;
+  gap: 0.5rem;
+  background-color: var(--bg-card);
+  padding: 0.25rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.empty-interventions {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.empty-interventions svg {
+  color: var(--accent-success);
+  margin-bottom: 1rem;
+}
+
+.empty-interventions h3 {
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.empty-interventions p {
+  color: var(--text-secondary);
+}
+
+/* Interventions Grid */
+.interventions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 1.5rem;
+}
+
+.intervention-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.intervention-card:hover {
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.dismiss-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dismiss-btn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.intervention-card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.intervention-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.intervention-card-meta {
+  flex: 1;
+}
+
+.intervention-card-priority {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+
+.intervention-card-confidence {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.intervention-card-title {
+  font-size: 1.25rem;
+  margin-bottom: 0.75rem;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.intervention-card-summary {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.intervention-card-reason {
+  background-color: var(--bg-secondary);
+  border-left: 3px solid var(--accent-primary);
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 1rem;
+}
+
+.intervention-card-reason h4 {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.intervention-card-reason p {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.intervention-card-surfaces {
+  margin-bottom: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.intervention-card-surfaces h4 {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.intervention-card-surfaces ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.intervention-card-surfaces li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem;
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.surface-type {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  text-transform: capitalize;
+}
+
+.surface-trigger {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.intervention-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  gap: 1rem;
+}
+
+.intervention-card-time {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.intervention-card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.action-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn.primary {
+  background-color: var(--accent-primary);
+  color: white;
+}
+
+.action-btn.primary:hover {
+  background-color: var(--accent-secondary);
+}
+
+.action-btn.secondary {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.action-btn.secondary:hover {
+  background-color: var(--bg-hover);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .interventions-page {
+    padding: 1rem;
+  }
+
+  .interventions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .intervention-card-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .intervention-card-actions {
+    width: 100%;
+  }
+
+  .action-btn {
+    flex: 1;
+  }
+}

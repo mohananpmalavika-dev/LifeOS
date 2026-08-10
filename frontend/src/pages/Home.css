@@ -1,0 +1,353 @@
+.home-page {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.home-header {
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.home-header h1 {
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+.sensor-indicators {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.sensor-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--bg-card);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.sensor-item svg {
+  color: var(--accent-primary);
+}
+
+/* Primary Intervention Card */
+.primary-intervention-card {
+  background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-tertiary) 100%);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-lg);
+}
+
+.intervention-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.intervention-icon {
+  width: 48px;
+  height: 48px;
+  background-color: var(--accent-warning);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.intervention-meta {
+  flex: 1;
+}
+
+.intervention-priority {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+
+.intervention-confidence {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.intervention-title {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.intervention-summary {
+  font-size: 1.125rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.intervention-reason {
+  background-color: var(--bg-secondary);
+  border-left: 3px solid var(--accent-primary);
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 1.5rem;
+}
+
+.intervention-reason h4 {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.intervention-reason p {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.intervention-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-primary {
+  background-color: var(--accent-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--accent-secondary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-secondary {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+  background-color: var(--bg-hover);
+}
+
+/* No Interventions State */
+.no-interventions-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 3rem 2rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.no-interventions-card svg {
+  color: var(--accent-success);
+  margin-bottom: 1rem;
+}
+
+.no-interventions-card h3 {
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.no-interventions-card p {
+  color: var(--text-secondary);
+}
+
+/* Quick View Grid */
+.quick-view-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.quick-view-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  height: fit-content;
+}
+
+.quick-view-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.quick-view-card h3 svg {
+  color: var(--accent-primary);
+}
+
+.empty-state {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 2rem 0;
+}
+
+/* Task List */
+.task-list {
+  list-style: none;
+}
+
+.task-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.task-item:last-child {
+  border-bottom: none;
+}
+
+.task-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.task-title {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.task-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.task-due {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Activity List */
+.activity-list {
+  list-style: none;
+}
+
+.activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--accent-primary);
+  margin-top: 0.5rem;
+  flex-shrink: 0;
+}
+
+.activity-content {
+  flex: 1;
+}
+
+.activity-title {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.activity-time {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Intervention List */
+.intervention-list {
+  list-style: none;
+}
+
+.intervention-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.intervention-item:last-child {
+  border-bottom: none;
+}
+
+.intervention-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.intervention-title-small {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.intervention-score {
+  font-size: 0.875rem;
+  color: var(--accent-warning);
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .home-page {
+    padding: 1rem;
+  }
+
+  .home-header {
+    flex-direction: column;
+  }
+
+  .quick-view-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .intervention-actions {
+    flex-direction: column;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    width: 100%;
+  }
+}

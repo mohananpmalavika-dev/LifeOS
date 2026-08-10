@@ -1,0 +1,254 @@
+.documents-page {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.documents-header {
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.documents-header h1 {
+  margin-bottom: 0.5rem;
+}
+
+.documents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.empty-documents {
+  grid-column: 1 / -1;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.empty-documents svg {
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.empty-documents h3 {
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.empty-documents p {
+  color: var(--text-secondary);
+}
+
+.document-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.document-card:hover {
+  border-color: var(--accent-danger);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.document-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-lg);
+  background-color: var(--accent-danger);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.document-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.document-name {
+  font-size: 1.125rem;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.document-meta {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.document-type,
+.document-source {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.document-detail-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+}
+
+.document-detail-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  max-width: 600px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.document-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.document-detail-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-lg);
+  background-color: var(--accent-danger);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+.document-detail-header h2 {
+  margin-bottom: 0.5rem;
+  color: var(--text-primary);
+}
+
+.document-detail-type {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.document-detail-section {
+  margin-bottom: 1.5rem;
+}
+
+.document-detail-section h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+.properties-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.property-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+}
+
+.property-key {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.property-value {
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.timeline-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.timeline-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+}
+
+.timeline-item span:first-child {
+  color: var(--text-muted);
+}
+
+.timeline-item span:last-child {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.close-detail-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: var(--accent-danger);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.close-detail-btn:hover {
+  opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+  .documents-page {
+    padding: 1rem;
+  }
+
+  .documents-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .document-detail-modal {
+    padding: 1rem;
+  }
+}
