@@ -13,6 +13,7 @@ import Privacy from './pages/Privacy';
 import Settings from './pages/Settings';
 import { NotificationIntelligence } from './pages/NotificationIntelligence';
 import Calendar from './pages/Calendar';
+import Location from './pages/Location';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
           <Route path="/insights" element={<Insights />} />
           <Route path="/notification-intelligence" element={<NotificationIntelligence />} />
           <Route path="/calendar" element={<Calendar />} />
+          <Route path="/location" element={<Location />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>

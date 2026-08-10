@@ -14,6 +14,7 @@ import { lifeEventsRouter } from "./routes/life-events.js";
 import { lifeContextRouter } from "./routes/life-context.js";
 import { notificationIntelligenceRoutes } from "./routes/notification-intelligence.js";
 import { createCalendarRoutes } from "./routes/calendar.js";
+import { createLocationRouter } from "./routes/location.js";
 import Database from "better-sqlite3";
 import path from "path";
 
@@ -59,6 +60,9 @@ app.use("/api/notification-intelligence", notificationIntelligenceRoutes);
 
 // Calendar Intelligence API
 app.use("/api/calendar", createCalendarRoutes(db));
+
+// Location Intelligence API
+app.use("/api/location", createLocationRouter(db));
 
 // Error handling middleware
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

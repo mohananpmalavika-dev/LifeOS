@@ -6,6 +6,8 @@
  * 
  * This is where the "Passive Agent" intelligence emerges - no single sensor
  * knows the full context, but fusion reveals the user's actual life situation.
+ * 
+ * v0.3: Enhanced with Location Intelligence integration
  */
 
 import type { 
@@ -17,6 +19,7 @@ import type {
   PlaceType,
   ActivityType,
 } from '../../types/life-event.js';
+import type { LocationContext } from '../../intelligence/location/types.js';
 
 /**
  * Life Context Types
@@ -105,10 +108,12 @@ interface EventWindow {
 export class ContextFusionEngine {
   /**
    * Analyze events and derive life context
+   * Now enhanced with Location Intelligence integration
    */
   static async fuseContext(
     events: LifeEvent[],
-    timeWindowMinutes: number = 60
+    timeWindowMinutes: number = 60,
+    locationContext?: LocationContext // NEW: Direct location intelligence input
   ): Promise<FusedContext[]> {
     // Group events by type
     const window = this.createEventWindow(events, timeWindowMinutes);
@@ -116,22 +121,31 @@ export class ContextFusionEngine {
     // Derive contexts
     const contexts: FusedContext[] = [];
     
+    // NEW: If we have location intelligence context, use it for enrichment
+    if (locationContext) {
+      const enrichedContext = this.fuseWithLocationIntelligence(window, locationContext);
+      if (enrichedContext) {
+        contexts.push(enrichedContext);
+        return contexts; // Location intelligence provides the most comprehensive context
+      }
+    }
+    
     // Check for meeting-related contexts
-    const meetingContext = this.detectMeetingContext(window);
+    const meetingContext = this.detectMeetingContext(window, locationContext);
     if (meetingContext) {
       contexts.push(meetingContext);
     }
     
     // Check for commuting context
-    const commutingContext = this.detectCommutingContext(window);
+    const commutingContext = this.detectCommutingContext(window, locationContext);
     if (commutingContext) {
       contexts.push(commutingContext);
     }
     
     // Check for location-based contexts
-    const locationContext = this.detectLocationContext(window);
-    if (locationContext) {
-      contexts.push(locationContext);
+    const locationBasedContext = this.detectLocationContext(window, locationContext);
+    if (locationBasedContext) {
+      contexts.push(locationBasedContext);
     }
     
     // Check for activity-based contexts
@@ -177,9 +191,201 @@ export class ContextFusionEngine {
   }
   
   /**
-   * Detect meeting-related contexts
+   * NEW: Fuse with Location Intelligence
+   * This provides the most comprehensive contextual understanding by combining
+   * the semantic location context with calendar and notifications
    */
-  private static detectMeetingContext(window: EventWindow): FusedContext | null {
+  private static fuseWithLocationIntelligence(
+    window: EventWindow,
+    locationContext: LocationContext
+  ): FusedContext | null {
+    const now = new Date();
+    let contextType: LifeContextType = LifeContextType.UNKNOWN;
+    let description: string;
+    const keySignals: string[] = [];
+    const confidenceFactors: string[] = [];
+    let confidence = locationContext.confidence;
+    const recommendations: string[] = [];
+    
+    // Use movement intent if available (highest semantic level)
+    if (locationContext.movementIntent) {
+      switch (locationContext.movementIntent) {
+        case 'COMMUTING_TO_WORK':
+          contextType = LifeContextType.COMMUTING;
+          description = `Commuting to work (${locationContext.travelMode})`;
+          keySignals.push('Location Intelligence: Commuting to work detected');
+          break;
+        case 'GOING_HOME':
+          contextType = LifeContextType.TRAVELING_HOME;
+          description = `Traveling home (${locationContext.travelMode})`;
+          keySignals.push('Location Intelligence: Going home detected');
+          break;
+        case 'GOING_TO_APPOINTMENT':
+          // Cross-reference with calendar
+          if (window.calendar.length > 0) {
+            contextType = LifeContextType.TRAVELING_TO_MEETING;
+            const nextMeeting = (window.calendar[0].data as CalendarEventData);
+            description = `Traveling to appointment: ${nextMeeting.title}`;
+            keySignals.push('Location Intelligence: Going to appointment');
+            keySignals.push(`Calendar: ${nextMeeting.title}`);
+            confidence = Math.min(confidence + 0.15, 1.0);
+            confidenceFactors.push('Location and calendar alignment');
+          } else {
+            contextType = LifeContextType.TRAVELING_TO_MEETING;
+            description = 'Traveling to appointment';
+            keySignals.push('Location Intelligence: Appointment destination');
+          }
+          break;
+        case 'EXERCISING':
+          contextType = LifeContextType.EXERCISING;
+          description = 'Exercising';
+          keySignals.push('Location Intelligence: Exercise activity detected');
+          break;
+        case 'SHOPPING':
+          contextType = LifeContextType.SHOPPING;
+          description = 'Shopping';
+          keySignals.push('Location Intelligence: Shopping destination');
+          break;
+      }
+    }
+    // Fall back to location state
+    else if (locationContext.locationState) {
+      switch (locationContext.locationState) {
+        case 'DWELLING':
+        case 'STATIONARY_AT_PLACE':
+          if (locationContext.currentPlace) {
+            contextType = this.placeTypeToContext(locationContext.currentPlace.type);
+            description = `At ${locationContext.currentPlace.name || locationContext.currentPlace.type.toLowerCase()}`;
+            keySignals.push(`Location: ${locationContext.currentPlace.name || locationContext.currentPlace.type}`);
+            
+            if (locationContext.dwellTime) {
+              keySignals.push(`Dwelling for ${locationContext.dwellTime} minutes`);
+            }
+          }
+          break;
+          
+        case 'TRAVELING':
+        case 'APPROACHING_DESTINATION':
+          if (locationContext.destination) {
+            const destType = this.placeTypeToContext(locationContext.destination.type);
+            if (destType === LifeContextType.AT_WORK) {
+              contextType = LifeContextType.COMMUTING;
+              description = `Commuting to work (${Math.round(locationContext.arrivalProbability * 100)}% arrival confidence)`;
+            } else if (destType === LifeContextType.AT_HOME) {
+              contextType = LifeContextType.TRAVELING_HOME;
+              description = `Traveling home (${Math.round(locationContext.arrivalProbability * 100)}% arrival confidence)`;
+            } else {
+              contextType = LifeContextType.UNKNOWN;
+              description = `Traveling to ${locationContext.destination.name || 'destination'}`;
+            }
+            
+            keySignals.push(`Destination: ${locationContext.destination.name || locationContext.destination.type}`);
+            keySignals.push(`Arrival probability: ${Math.round(locationContext.arrivalProbability * 100)}%`);
+            
+            if (locationContext.locationState === 'APPROACHING_DESTINATION') {
+              recommendations.push('You are approaching your destination');
+            }
+          }
+          break;
+      }
+    }
+    
+    // Add routine pattern information
+    if (locationContext.routinePattern) {
+      keySignals.push(`Routine: ${locationContext.routinePattern.name} (${Math.round(locationContext.routinePattern.probability * 100)}% match)`);
+      confidenceFactors.push('Matches learned routine pattern');
+      confidence = Math.min(confidence + 0.1, 1.0);
+    }
+    
+    // Add movement details
+    keySignals.push(`Movement: ${locationContext.movementState.state}`);
+    if (locationContext.movementState.speedKmh) {
+      keySignals.push(`Speed: ${Math.round(locationContext.movementState.speedKmh)} km/h`);
+    }
+    keySignals.push(`Travel mode: ${locationContext.travelMode}`);
+    
+    // Cross-reference with calendar for enhanced context
+    if (window.calendar.length > 0 && !locationContext.movementIntent) {
+      const nextMeeting = (window.calendar[0].data as CalendarEventData);
+      const startTime = new Date(nextMeeting.startTime);
+      const minutesUntil = (startTime.getTime() - now.getTime()) / 60000;
+      
+      if (minutesUntil > 0 && minutesUntil <= 120) {
+        keySignals.push(`Upcoming: ${nextMeeting.title} in ${Math.round(minutesUntil)} minutes`);
+        
+        if (locationContext.destination) {
+          recommendations.push(`On route to ${nextMeeting.title}`);
+        } else if (minutesUntil <= 30) {
+          recommendations.push(`Meeting "${nextMeeting.title}" starts soon`);
+        }
+      }
+    }
+    
+    // Add notification context
+    if (window.notification.length > 0) {
+      keySignals.push(`${window.notification.length} recent notification(s)`);
+    }
+    
+    if (contextType === LifeContextType.UNKNOWN) {
+      return null;
+    }
+    
+    return {
+      contextType,
+      confidence,
+      startTime: locationContext.timestamp.toISOString(),
+      sourceEvents: {
+        location: window.location,
+        calendar: window.calendar.length > 0 ? window.calendar : undefined,
+        notification: window.notification.length > 0 ? window.notification : undefined,
+        activity: window.activity.length > 0 ? window.activity : undefined,
+      },
+      insights: {
+        description,
+        key_signals: keySignals,
+        confidence_factors: confidenceFactors.length > 0 
+          ? confidenceFactors 
+          : ['Location Intelligence semantic understanding'],
+      },
+      recommendations: recommendations.length > 0 ? recommendations : undefined,
+      entities: {
+        places: locationContext.currentPlace 
+          ? [locationContext.currentPlace.name || locationContext.currentPlace.placeId] 
+          : undefined,
+      },
+      metadata: {
+        locationState: locationContext.locationState,
+        movementIntent: locationContext.movementIntent,
+        travelMode: locationContext.travelMode,
+        currentPlace: locationContext.currentPlace?.name,
+        destination: locationContext.destination?.name,
+        arrivalProbability: locationContext.arrivalProbability,
+        departureProbability: locationContext.departureProbability,
+        dwellTime: locationContext.dwellTime,
+        routineMatch: locationContext.routinePattern?.name,
+      },
+    };
+  }
+  
+  /**
+   * Helper: Map PlaceType to LifeContextType
+   */
+  private static placeTypeToContext(placeType: string): LifeContextType {
+    const mapping: Record<string, LifeContextType> = {
+      'HOME': LifeContextType.AT_HOME,
+      'WORK': LifeContextType.AT_WORK,
+      'GYM': LifeContextType.AT_GYM,
+      'SHOP': LifeContextType.SHOPPING,
+      'RESTAURANT': LifeContextType.SOCIAL_ACTIVITY,
+    };
+    return mapping[placeType] || LifeContextType.UNKNOWN;
+  }
+  
+  /**
+   * Detect meeting-related contexts
+   * Enhanced with location intelligence
+   */
+  private static detectMeetingContext(window: EventWindow, locationContext?: LocationContext): FusedContext | null {
     if (window.calendar.length === 0) {
       return null;
     }
@@ -209,12 +415,13 @@ export class ContextFusionEngine {
     const minutesUntil = (startTime.getTime() - now.getTime()) / 60000;
     
     // Check if user is moving toward meeting
-    const isMoving = window.activity.some(e => {
-      const data = e.data as ActivityEventData;
-      return data.activity === 'DRIVING' || 
-             data.activity === 'IN_VEHICLE' || 
-             data.activity === 'WALKING';
-    });
+    const isMoving = locationContext?.movementState.state !== 'STATIONARY' || 
+      window.activity.some(e => {
+        const data = e.data as ActivityEventData;
+        return data.activity === 'DRIVING' || 
+               data.activity === 'IN_VEHICLE' || 
+               data.activity === 'WALKING';
+      });
     
     // Determine context type
     let contextType: LifeContextType;
@@ -260,6 +467,21 @@ export class ContextFusionEngine {
       confidence += 0.1;
     }
     
+    // NEW: Add location intelligence context
+    if (locationContext) {
+      if (locationContext.destination && isMoving) {
+        keySignals.push(`Moving toward destination (${locationContext.travelMode})`);
+        confidenceFactors.push('Location intelligence confirms travel');
+        confidence += 0.1;
+      }
+      
+      if (locationContext.routinePattern?.type === 'WEEKLY_APPOINTMENT') {
+        keySignals.push('Matches routine appointment pattern');
+        confidenceFactors.push('Routine pattern alignment');
+        confidence += 0.05;
+      }
+    }
+    
     return {
       contextType,
       confidence: Math.min(confidence, 1.0),
@@ -290,8 +512,9 @@ export class ContextFusionEngine {
   
   /**
    * Detect commuting context
+   * Enhanced with location intelligence
    */
-  private static detectCommutingContext(window: EventWindow): FusedContext | null {
+  private static detectCommutingContext(window: EventWindow, locationContext?: LocationContext): FusedContext | null {
     if (window.activity.length === 0) {
       return null;
     }
@@ -341,6 +564,26 @@ export class ContextFusionEngine {
       confidenceFactors.push('Calendar event suggests destination');
     }
     
+    // NEW: Boost confidence with location intelligence
+    if (locationContext) {
+      if (locationContext.movementIntent === 'COMMUTING_TO_WORK' || 
+          locationContext.movementIntent === 'GOING_HOME') {
+        confidence += 0.2;
+        confidenceFactors.push('Location intelligence confirms commute');
+        keySignals.push(`Location intent: ${locationContext.movementIntent}`);
+      }
+      
+      if (locationContext.routinePattern?.type === 'WORKDAY_COMMUTE') {
+        confidence += 0.15;
+        confidenceFactors.push('Matches learned commute routine');
+        keySignals.push(`Routine: ${locationContext.routinePattern.name}`);
+      }
+      
+      if (locationContext.destination) {
+        keySignals.push(`Destination: ${locationContext.destination.name || locationContext.destination.type}`);
+      }
+    }
+    
     return {
       contextType,
       confidence: Math.min(confidence, 1.0),
@@ -365,8 +608,9 @@ export class ContextFusionEngine {
   
   /**
    * Detect location-based contexts
+   * Enhanced with location intelligence
    */
-  private static detectLocationContext(window: EventWindow): FusedContext | null {
+  private static detectLocationContext(window: EventWindow, locationContext?: LocationContext): FusedContext | null {
     if (window.location.length === 0) {
       return null;
     }
@@ -376,6 +620,49 @@ export class ContextFusionEngine {
       e.type === 'PLACE_TRANSITION'
     );
     
+    // NEW: Prefer location intelligence if available
+    if (locationContext?.currentPlace) {
+      const placeType = locationContext.currentPlace.type;
+      const contextType = this.placeTypeToContext(placeType);
+      
+      if (contextType === LifeContextType.UNKNOWN) {
+        return null;
+      }
+      
+      const description = `Currently at ${locationContext.currentPlace.name || placeType.toLowerCase()}`;
+      const keySignals = [
+        `Place: ${locationContext.currentPlace.name || placeType}`,
+        `Location state: ${locationContext.locationState}`,
+      ];
+      
+      let confidence = locationContext.currentPlace.confidence;
+      
+      if (locationContext.dwellTime && locationContext.dwellTime > 10) {
+        confidence += 0.1;
+        keySignals.push(`Dwelling for ${locationContext.dwellTime} minutes`);
+      }
+      
+      return {
+        contextType,
+        confidence: Math.min(confidence, 1.0),
+        startTime: locationContext.timestamp.toISOString(),
+        sourceEvents: {
+          location: window.location,
+        },
+        insights: {
+          description,
+          key_signals: keySignals,
+          confidence_factors: ['Location Intelligence place detection'],
+        },
+        metadata: {
+          place: locationContext.currentPlace.name || placeType,
+          dwellTime: locationContext.dwellTime,
+          placeConfidence: locationContext.currentPlace.confidence,
+        },
+      };
+    }
+    
+    // Fall back to legacy place transition detection
     if (placeTransitions.length === 0) {
       return null;
     }
@@ -551,12 +838,14 @@ export class ContextFusionEngine {
   
   /**
    * Get current life context for a user
+   * Enhanced with optional location intelligence
    */
   static async getCurrentContext(
     userId: string,
-    recentEvents: LifeEvent[]
+    recentEvents: LifeEvent[],
+    locationContext?: LocationContext
   ): Promise<FusedContext | null> {
-    const contexts = await this.fuseContext(recentEvents, 60);
+    const contexts = await this.fuseContext(recentEvents, 60, locationContext);
     
     // Return highest confidence context
     if (contexts.length === 0) {

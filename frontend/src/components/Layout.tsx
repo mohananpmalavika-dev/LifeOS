@@ -14,7 +14,8 @@ import {
   Settings,
   Menu,
   X,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Navigation
 } from 'lucide-react';
 import './Layout.css';
 
@@ -32,6 +33,7 @@ const navItems: NavItem[] = [
   { path: '/', label: 'Home', icon: <Home size={20} /> },
   { path: '/timeline', label: 'Timeline', icon: <Clock size={20} /> },
   { path: '/calendar', label: 'Calendar', icon: <CalendarIcon size={20} /> },
+  { path: '/location', label: 'Location', icon: <Navigation size={20} /> },
   { path: '/interventions', label: 'Interventions', icon: <Bell size={20} /> },
   { path: '/context', label: 'Context Graph', icon: <Network size={20} /> },
   { path: '/tasks', label: 'Tasks', icon: <CheckSquare size={20} /> },
