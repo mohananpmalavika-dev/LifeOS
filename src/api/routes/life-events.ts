@@ -14,6 +14,16 @@ import type {
 } from '../../types/life-event.js';
 import { devices } from './devices.js';
 import { EventProcessor } from '../services/event-processor.js';
+import Database from 'better-sqlite3';
+import path from 'path';
+import { CalendarIntelligenceService } from '../../calendar/CalendarIntelligenceService.js';
+import { CalendarContextBridge } from '../../calendar/CalendarContextBridge.js';
+
+// Initialize database and calendar services
+const dbPath = process.env.DB_PATH || path.join(process.cwd(), "lifeos.db");
+const db = new Database(dbPath);
+const calendarService = new CalendarIntelligenceService(db);
+const calendarBridge = new CalendarContextBridge(db, calendarService);
 
 const router = Router();
 
@@ -387,6 +397,96 @@ router.get('/events', async (req, res) => {
       success: false,
       error: {
         code: 'QUERY_FAILED',
+        message: error.message,
+      },
+      timestamp: new Date().toISOString(),
+    } as ApiResponse);
+  }
+});
+
+/**
+ * POST /api/v1/context/events/calendar-sync
+ * Sync calendar events to context system
+ */
+router.post('/events/calendar-sync', async (req, res) => {
+  try {
+    const { events: calendarEvents, deviceId = 'system' } = req.body;
+
+    if (!Array.isArray(calendarEvents)) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_REQUEST',
+          message: 'events must be an array',
+        },
+        timestamp: new Date().toISOString(),
+      } as ApiResponse);
+    }
+
+    // Sync calendar events through the bridge
+    const result = await calendarBridge.syncCalendarToContext(calendarEvents, deviceId);
+
+    console.log(`📅 Calendar sync: ${result.synced} events synced, ${result.interventions} interventions generated`);
+
+    res.json({
+      success: true,
+      data: {
+        synced: result.synced,
+        failed: result.failed,
+        interventions: result.interventions,
+      },
+      timestamp: new Date().toISOString(),
+    } as ApiResponse);
+
+  } catch (error: any) {
+    console.error('Calendar sync error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'CALENDAR_SYNC_FAILED',
+        message: error.message,
+      },
+      timestamp: new Date().toISOString(),
+    } as ApiResponse);
+  }
+});
+
+/**
+ * GET /api/v1/context/calendar-context
+ * Get enriched calendar context for time window
+ */
+router.get('/calendar-context', async (req, res) => {
+  try {
+    const { startTime, endTime } = req.query;
+
+    if (!startTime || !endTime) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'INVALID_REQUEST',
+          message: 'Missing startTime or endTime',
+        },
+        timestamp: new Date().toISOString(),
+      } as ApiResponse);
+    }
+
+    const context = await calendarBridge.getCalendarContext(
+      startTime as string,
+      endTime as string
+    );
+
+    res.json({
+      success: true,
+      data: context,
+      timestamp: new Date().toISOString(),
+    } as ApiResponse);
+
+  } catch (error: any) {
+    console.error('Calendar context error:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'CONTEXT_RETRIEVAL_FAILED',
         message: error.message,
       },
       timestamp: new Date().toISOString(),

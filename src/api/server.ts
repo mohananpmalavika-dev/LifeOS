@@ -13,8 +13,15 @@ import { devicesRouter } from "./routes/devices.js";
 import { lifeEventsRouter } from "./routes/life-events.js";
 import { lifeContextRouter } from "./routes/life-context.js";
 import { notificationIntelligenceRoutes } from "./routes/notification-intelligence.js";
+import { createCalendarRoutes } from "./routes/calendar.js";
+import Database from "better-sqlite3";
+import path from "path";
 
 const app = express();
+
+// Initialize database connection
+const dbPath = process.env.DB_PATH || path.join(process.cwd(), "lifeos.db");
+const db = new Database(dbPath);
 const PORT = process.env.PORT || 3001;
 
 // Middleware
@@ -49,6 +56,9 @@ app.use("/api/v1/devices", devicesRouter);
 app.use("/api/v1/context", lifeEventsRouter);
 app.use("/api/v1/life-context", lifeContextRouter);
 app.use("/api/notification-intelligence", notificationIntelligenceRoutes);
+
+// Calendar Intelligence API
+app.use("/api/calendar", createCalendarRoutes(db));
 
 // Error handling middleware
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
