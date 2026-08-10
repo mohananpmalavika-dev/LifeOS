@@ -1,0 +1,27 @@
+{
+  "name": "lifeos-context-engine",
+  "version": "0.1.0",
+  "description": "Privacy-first passive context engine prototype for LifeOS.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint . --ext .ts",
+    "start": "node dist/index.js",
+    "start:api": "node dist/api/index.js",
+    "dev:api": "tsc && node dist/api/index.js"
+  },
+  "dependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "body-parser": "^2.3.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "sql.js": "^1.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.5.0"
+  }
+}
