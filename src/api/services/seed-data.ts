@@ -121,7 +121,7 @@ export async function seedInitialDemoData(db: Database.Database) {
     const graph = (lifeosService as any).engine.getGraph();
     const entities = graph.getEntities();
     if (entities.length === 0) {
-      graph.insertEntity({
+      graph.addEntity({
         id: "doc_insurance",
         type: "Document",
         title: "Health Insurance Policy Card (Star Health)",
@@ -130,7 +130,7 @@ export async function seedInitialDemoData(db: Database.Database) {
         updatedAt: new Date().toISOString(),
       });
 
-      graph.insertEntity({
+      graph.addEntity({
         id: "doc_lab_report",
         type: "Document",
         title: "Recent Blood Test Reports",
@@ -139,7 +139,7 @@ export async function seedInitialDemoData(db: Database.Database) {
         updatedAt: new Date().toISOString(),
       });
 
-      graph.insertEntity({
+      graph.addEntity({
         id: "person_doctor",
         type: "Person",
         title: "Dr. Priya Nair",
@@ -148,7 +148,7 @@ export async function seedInitialDemoData(db: Database.Database) {
         updatedAt: new Date().toISOString(),
       });
 
-      graph.insertEntity({
+      graph.addEntity({
         id: "evt_doc_entity",
         type: "Event",
         title: "Doctor Appointment — Dr. Priya Nair",

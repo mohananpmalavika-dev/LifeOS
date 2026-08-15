@@ -78,7 +78,7 @@ export function createMemoryRouter(db: Database.Database): Router {
             if (title) entity.title = title;
             if (detail) entity.properties.relationship = detail;
             entity.properties.origin = "USER_VERIFIED";
-            graph.insertEntity(entity);
+            graph.addEntity(entity);
           }
         } catch {}
       }

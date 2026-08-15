@@ -11,12 +11,13 @@ import {
   Settings,
   Clock,
   Navigation,
-  Users,
-  FileText,
   Brain,
   SlidersHorizontal,
   Menu,
-  X
+  X,
+  Activity,
+  Bell,
+  Cpu
 } from 'lucide-react';
 import { stateApi } from '../services/api';
 import OnboardingModal from './OnboardingModal';
@@ -63,21 +64,25 @@ export function Layout({ children }: LayoutProps) {
   };
 
   const mainNav = [
-    { path: '/', label: 'Home (Now)', icon: <Home size={20} /> },
-    { path: '/calendar', label: 'Calendar', icon: <CalendarIcon size={20} /> },
-    { path: '/tasks', label: 'Tasks', icon: <CheckSquare size={20} /> },
-    { path: '/ask', label: 'Ask LifeOS', icon: <MessageSquare size={20} /> },
-    { path: '/memory', label: 'Memory', icon: <Brain size={20} /> },
+    { path: '/', label: 'Home', icon: <Home size={19} /> },
+    { path: '/ask', label: 'Ask LifeOS', icon: <MessageSquare size={19} /> },
+    { path: '/calendar', label: 'Calendar', icon: <CalendarIcon size={19} /> },
+    { path: '/tasks', label: 'Tasks', icon: <CheckSquare size={19} /> },
+    { path: '/memory', label: 'Memory', icon: <Brain size={19} /> },
   ];
 
-  const moreNav = [
-    { path: '/context', label: 'Why LifeOS Knows', icon: <Sparkles size={18} /> },
-    { path: '/timeline', label: 'Timeline History', icon: <Clock size={18} /> },
-    { path: '/location', label: 'Location & Places', icon: <Navigation size={18} /> },
-    { path: '/people', label: 'People & Contacts', icon: <Users size={18} /> },
-    { path: '/documents', label: 'Documents', icon: <FileText size={18} /> },
-    { path: '/privacy', label: 'Privacy Center', icon: <Shield size={18} /> },
-    { path: '/settings', label: 'Settings', icon: <Settings size={18} /> },
+  const userTools = [
+    { path: '/context', label: 'Why LifeOS Knows', icon: <Sparkles size={17} /> },
+    { path: '/timeline', label: 'Timeline History', icon: <Clock size={17} /> },
+    { path: '/privacy', label: 'Privacy Center', icon: <Shield size={17} /> },
+    { path: '/settings', label: 'Settings', icon: <Settings size={17} /> },
+  ];
+
+  const systemDiagnostics = [
+    { path: '/insights', label: 'Insights & Accuracy', icon: <Activity size={17} /> },
+    { path: '/notification-intelligence', label: 'Notification Engine', icon: <Bell size={17} /> },
+    { path: '/location', label: 'Location & Places', icon: <Navigation size={17} /> },
+    { path: '/interventions', label: 'Interventions & Surfaces', icon: <Cpu size={17} /> },
   ];
 
   return (
@@ -95,7 +100,7 @@ export function Layout({ children }: LayoutProps) {
           <div className="logo" onClick={() => navigate('/')}>
             <div className="logo-badge">L</div>
             <span className="logo-title">LifeOS</span>
-            <span className="version-pill">v1.1</span>
+            <span className="version-pill">v1.1 Alpha</span>
           </div>
         </div>
 
@@ -128,20 +133,20 @@ export function Layout({ children }: LayoutProps) {
           {/* Reliability Health Indicator */}
           <button className="reliability-pill" onClick={() => setShowReliability(true)}>
             <div className="status-dot-pulse" />
-            <span>🟢 Active</span>
+            <span>🟢 Alpha Active</span>
           </button>
 
           {/* Tour/Help */}
-          <button className="tour-btn" onClick={() => setShowOnboarding(true)} title="Product Tour & Settings">
+          <button className="tour-btn" onClick={() => setShowOnboarding(true)} title="Product Tour & Setup">
             <Sparkles size={16} />
           </button>
         </div>
       </header>
 
       <div className="layout-body">
-        {/* Simplified Sidebar */}
+        {/* Streamlined Sidebar */}
         <aside className={`app-sidebar ${sidebarOpen ? 'open' : 'collapsed'}`}>
-          <div className="nav-section-title">{sidebarOpen ? 'PRIMARY' : '—'}</div>
+          <div className="nav-section-title">{sidebarOpen ? 'CORE EXPERIENCE' : '—'}</div>
           <nav className="nav-group">
             {mainNav.map(item => (
               <Link 
@@ -156,9 +161,24 @@ export function Layout({ children }: LayoutProps) {
             ))}
           </nav>
 
-          <div className="nav-section-title">{sidebarOpen ? 'MORE & PRIVACY' : '—'}</div>
+          <div className="nav-section-title">{sidebarOpen ? 'TOOLS & PRIVACY' : '—'}</div>
           <div className="more-accordion">
-            {moreNav.map(item => (
+            {userTools.map(item => (
+              <Link 
+                key={item.path} 
+                to={item.path} 
+                className={`nav-link sub ${location.pathname === item.path ? 'active' : ''}`}
+                title={item.label}
+              >
+                <span className="icon">{item.icon}</span>
+                {sidebarOpen && <span className="label">{item.label}</span>}
+              </Link>
+            ))}
+          </div>
+
+          <div className="nav-section-title">{sidebarOpen ? 'SYSTEM DIAGNOSTICS' : '—'}</div>
+          <div className="more-accordion">
+            {systemDiagnostics.map(item => (
               <Link 
                 key={item.path} 
                 to={item.path} 
@@ -177,7 +197,7 @@ export function Layout({ children }: LayoutProps) {
                 <Shield size={16} className="text-success" />
                 <div>
                   <strong>Local-First Privacy</strong>
-                  <p>Data stored safely on device</p>
+                  <p>Encrypted on this device</p>
                 </div>
               </div>
             )}
