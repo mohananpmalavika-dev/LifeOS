@@ -157,7 +157,7 @@ export async function seedInitialDemoData(db: Database.Database) {
         updatedAt: new Date().toISOString(),
       });
 
-      graph.insertRelation({
+      graph.addRelation({
         id: "rel_req_1",
         sourceId: "evt_doc_entity",
         targetId: "doc_insurance",
@@ -166,7 +166,7 @@ export async function seedInitialDemoData(db: Database.Database) {
         createdAt: new Date().toISOString(),
       });
 
-      graph.insertRelation({
+      graph.addRelation({
         id: "rel_req_2",
         sourceId: "evt_doc_entity",
         targetId: "doc_lab_report",
