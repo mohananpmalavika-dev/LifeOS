@@ -11,21 +11,19 @@ export async function openDatabase() {
     return file;
   };
 
-  // Some runtimes attempt to load sql-wasm.wasm from the CWD — copy the bundled wasm there as a fallback.
   const fallbackWasm = path.join(process.cwd(), "sql-wasm.wasm");
   try {
     if (fs.existsSync(wasmPath) && !fs.existsSync(fallbackWasm)) {
       fs.copyFileSync(wasmPath, fallbackWasm);
     }
-  } catch (e) {
-    // ignore copy errors
-  }
+  } catch (e) {}
 
   let SQL: any;
   try {
     SQL = await (initSqlJs as any)({ locateFile: locate });
   } catch (e) {
-    return createInMemoryShim();
+    console.error("FATAL: Failed to initialize SQLite / SQL.js persistence engine:", e);
+    throw new Error("Database initialization failed. Ambient context engine halted to prevent data loss.");
   }
 
   let db;
@@ -35,27 +33,20 @@ export async function openDatabase() {
     db = new SQL.Database(new Uint8Array(buffer));
   } else {
     db = new SQL.Database();
-    db.run(`CREATE TABLE entities (id TEXT PRIMARY KEY, type TEXT, title TEXT, properties TEXT, createdAt TEXT, updatedAt TEXT);`);
-    db.run(`CREATE TABLE relations (id TEXT PRIMARY KEY, sourceId TEXT, targetId TEXT, type TEXT, confidence REAL, createdAt TEXT);`);
-    db.run(`CREATE TABLE vectors (id TEXT PRIMARY KEY, content TEXT, embedding TEXT, metadata TEXT, insertedAt TEXT);`);
+    db.run(`CREATE TABLE IF NOT EXISTS entities (id TEXT PRIMARY KEY, type TEXT, title TEXT, properties TEXT, createdAt TEXT, updatedAt TEXT);`);
+    db.run(`CREATE TABLE IF NOT EXISTS relations (id TEXT PRIMARY KEY, sourceId TEXT, targetId TEXT, type TEXT, confidence REAL, createdAt TEXT);`);
+    db.run(`CREATE TABLE IF NOT EXISTS vectors (id TEXT PRIMARY KEY, content TEXT, embedding TEXT, metadata TEXT, insertedAt TEXT);`);
     persistDatabase(db);
   }
 
   return db;
 }
 
-// If wasm/init fails at runtime, provide an in-memory shim with compatible API so the app can run without persistence.
-export function createInMemoryShim() {
-  return {
-    run: (_sql: string, _params?: any[]) => {
-      // noop
-    },
-    exec: (_sql: string) => [],
-    export: () => new Uint8Array(),
-  };
-}
-
 export function persistDatabase(db: any) {
-  const data = db.export();
-  fs.writeFileSync(DB_PATH, Buffer.from(data));
+  try {
+    const data = db.export();
+    fs.writeFileSync(DB_PATH, Buffer.from(data));
+  } catch (e) {
+    console.error("ERROR: Failed to persist database to disk:", e);
+  }
 }
