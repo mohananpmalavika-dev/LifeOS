@@ -15,6 +15,11 @@ import { lifeContextRouter } from "./routes/life-context.js";
 import { notificationIntelligenceRoutes } from "./routes/notification-intelligence.js";
 import { createCalendarRoutes } from "./routes/calendar.js";
 import { createLocationRouter } from "./routes/location.js";
+import { createBriefingRouter } from "./routes/briefing.js";
+import { createAskRouter } from "./routes/ask.js";
+import { createMemoryRouter } from "./routes/memory.js";
+import { createPrivacyCenterRouter } from "./routes/privacy-center.js";
+import { seedInitialDemoData } from "./services/seed-data.js";
 import Database from "better-sqlite3";
 import path from "path";
 
@@ -24,6 +29,9 @@ const app = express();
 const dbPath = process.env.DB_PATH || path.join(process.cwd(), "lifeos.db");
 const db = new Database(dbPath);
 const PORT = process.env.PORT || 3001;
+
+// Seed initial data
+seedInitialDemoData(db);
 
 // Middleware
 app.use(cors({
@@ -43,6 +51,11 @@ app.get("/api/health", (_req, res) => {
 });
 
 // API Routes
+app.use("/api/briefing", createBriefingRouter(db));
+app.use("/api/ask", createAskRouter(db));
+app.use("/api/memory", createMemoryRouter(db));
+app.use("/api/privacy-center", createPrivacyCenterRouter(db));
+
 app.use("/api/interventions", interventionRoutes);
 app.use("/api/timeline", timelineRoutes);
 app.use("/api/context", contextRoutes);

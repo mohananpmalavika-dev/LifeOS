@@ -1,12 +1,18 @@
 import { useEffect, useState } from 'react';
 import { tasksApi, type Task } from '../services/api';
-import { CheckSquare, Clock, AlertCircle, Sparkles } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, Circle, Sparkles, X } from 'lucide-react';
 import './Tasks.css';
 
-function Tasks() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
+export function Tasks() {
+  const [, setTasks] = useState<Task[]>([]);
+  const [eventGroups, setEventGroups] = useState<Record<string, Task[]>>({});
+  const [summary, setSummary] = useState<any>(null);
+  const [, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskContext, setNewTaskContext] = useState('Doctor Appointment — Dr. Priya Nair');
+  const [newTaskPriority, setNewTaskPriority] = useState<'high' | 'medium' | 'low'>('high');
 
   useEffect(() => {
     loadTasks();
@@ -18,6 +24,8 @@ function Tasks() {
       const params = filter !== 'all' ? { priority: filter } : {};
       const response = await tasksApi.getAll(params);
       setTasks(response.data.data);
+      setEventGroups(response.data.eventGroups || {});
+      setSummary(response.data.summary || {});
     } catch (error) {
       console.error('Error loading tasks:', error);
     } finally {
@@ -25,182 +33,164 @@ function Tasks() {
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'var(--accent-danger)';
-      case 'medium':
-        return 'var(--accent-warning)';
-      case 'low':
-        return 'var(--accent-success)';
-      default:
-        return 'var(--text-muted)';
+  const handleToggleComplete = async (id: string, currentCompleted?: boolean) => {
+    try {
+      await tasksApi.update(id, { completed: !currentCompleted });
+      loadTasks();
+    } catch (e) {
+      console.error('Error updating task:', e);
     }
   };
 
-  const getPriorityIcon = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return <AlertCircle size={20} />;
-      case 'medium':
-        return <Clock size={20} />;
-      case 'low':
-        return <CheckSquare size={20} />;
-      default:
-        return <CheckSquare size={20} />;
+  const handleDeleteTask = async (id: string) => {
+    try {
+      await tasksApi.delete(id);
+      loadTasks();
+    } catch (e) {
+      console.error('Error deleting task:', e);
     }
   };
 
-  const formatDueDate = (dueDate?: string) => {
-    if (!dueDate) return null;
-    
-    const date = new Date(dueDate);
-    const now = new Date();
-    const diffHours = (date.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-    if (diffHours < 0) {
-      return { text: 'Overdue', urgent: true };
-    } else if (diffHours < 6) {
-      return { text: `In ${Math.round(diffHours)}h`, urgent: true };
-    } else if (diffHours < 24) {
-      return { text: date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }), urgent: false };
-    } else {
-      return { text: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }), urgent: false };
+  const handleCreateTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTaskTitle.trim()) return;
+    try {
+      await tasksApi.create({
+        title: newTaskTitle.trim(),
+        priority: newTaskPriority,
+        eventContext: newTaskContext,
+        category: newTaskPriority === 'high' ? 'MUST_DO' : newTaskPriority === 'medium' ? 'SHOULD_DO' : 'NICE_TO_DO',
+      });
+      setNewTaskTitle('');
+      setShowAddModal(false);
+      loadTasks();
+    } catch (e) {
+      console.error('Error creating task:', e);
     }
-  };
-
-  if (loading) {
-    return (
-      <div className="tasks-page">
-        <div className="tasks-header">
-          <div className="skeleton" style={{ width: '200px', height: '40px' }}></div>
-        </div>
-        <div className="tasks-content">
-          <div className="skeleton" style={{ width: '100%', height: '400px' }}></div>
-        </div>
-      </div>
-    );
-  }
-
-  const groupedTasks = {
-    high: tasks.filter(t => t.priority === 'high'),
-    medium: tasks.filter(t => t.priority === 'medium'),
-    low: tasks.filter(t => t.priority === 'low'),
   };
 
   return (
-    <div className="tasks-page">
+    <div className="tasks-screen">
       <div className="tasks-header">
         <div>
-          <h1>Tasks</h1>
-          <p className="subtitle">
-            <Sparkles size={16} />
-            Automatically derived from your context
-          </p>
+          <h2>Context-Aware Tasks & Preparation</h2>
+          <p className="subtitle">Automatically grouped around your appointments and commitments</p>
         </div>
 
-        <div className="tasks-filters">
-          <button 
-            className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
-            onClick={() => setFilter('all')}
-          >
-            All ({tasks.length})
-          </button>
-          <button 
-            className={`filter-btn ${filter === 'high' ? 'active' : ''}`}
-            onClick={() => setFilter('high')}
-          >
-            High ({groupedTasks.high.length})
-          </button>
-          <button 
-            className={`filter-btn ${filter === 'medium' ? 'active' : ''}`}
-            onClick={() => setFilter('medium')}
-          >
-            Medium ({groupedTasks.medium.length})
-          </button>
-          <button 
-            className={`filter-btn ${filter === 'low' ? 'active' : ''}`}
-            onClick={() => setFilter('low')}
-          >
-            Low ({groupedTasks.low.length})
+        <div className="header-actions">
+          <button className="add-task-btn" onClick={() => setShowAddModal(true)}>
+            <Plus size={16} /> Add Task
           </button>
         </div>
       </div>
 
-      <div className="tasks-content">
-        {tasks.length === 0 ? (
-          <div className="empty-tasks">
-            <CheckSquare size={48} />
-            <h3>No tasks yet</h3>
-            <p>Tasks will be automatically derived from your context and events</p>
+      {/* Summary Badges Bar */}
+      {summary && (
+        <div className="summary-strip">
+          <div className="badge-item red" onClick={() => setFilter('high')}>
+            <strong>🔴 {summary.mustDo}</strong> <span>Must Do</span>
           </div>
-        ) : (
-          <div className="tasks-list">
-            {(filter === 'all' ? 
-              [...groupedTasks.high, ...groupedTasks.medium, ...groupedTasks.low] : 
-              tasks
-            ).map((task) => {
-              const dueInfo = formatDueDate(task.dueDate);
-              
-              return (
-                <div 
-                  key={task.id} 
-                  className="task-card"
-                  style={{ borderLeftColor: getPriorityColor(task.priority) }}
-                >
-                  <div className="task-header">
-                    <div 
-                      className="task-priority-badge"
-                      style={{ backgroundColor: getPriorityColor(task.priority) }}
-                    >
-                      {getPriorityIcon(task.priority)}
-                      <span>{task.priority}</span>
+          <div className="badge-item yellow" onClick={() => setFilter('medium')}>
+            <strong>🟡 {summary.shouldDo}</strong> <span>Should Do</span>
+          </div>
+          <div className="badge-item green" onClick={() => setFilter('low')}>
+            <strong>🟢 {summary.niceToDo}</strong> <span>Nice To Do</span>
+          </div>
+          <div className="badge-item neutral" onClick={() => setFilter('all')}>
+            <strong>✅ {summary.completed}</strong> <span>Completed</span>
+          </div>
+        </div>
+      )}
+
+      {/* Grouped Task List */}
+      <div className="event-groups-container">
+        {Object.keys(eventGroups).map(groupName => (
+          <div key={groupName} className="event-group-card">
+            <div className="group-header">
+              <Sparkles size={16} className="text-primary" />
+              <h3>{groupName}</h3>
+              <span className="count-pill">{eventGroups[groupName].length} items</span>
+            </div>
+
+            <div className="group-tasks-list">
+              {eventGroups[groupName].map(task => (
+                <div key={task.id} className={`task-item ${task.completed ? 'completed' : ''}`}>
+                  <button 
+                    className="check-toggle" 
+                    onClick={() => handleToggleComplete(task.id, task.completed)}
+                  >
+                    {task.completed ? <CheckCircle2 size={20} className="text-success" /> : <Circle size={20} />}
+                  </button>
+
+                  <div className="task-body">
+                    <div className="task-title-row">
+                      <span className="task-title">{task.title}</span>
+                      <span className={`priority-pill ${task.priority}`}>
+                        {task.priority === 'high' ? '🔴 MUST DO' : task.priority === 'medium' ? '🟡 SHOULD DO' : '🟢 NICE TO DO'}
+                      </span>
                     </div>
-                    
-                    {dueInfo && (
-                      <div className={`task-due ${dueInfo.urgent ? 'urgent' : ''}`}>
-                        <Clock size={14} />
-                        {dueInfo.text}
-                      </div>
-                    )}
+                    {task.description && <p className="task-desc">{task.description}</p>}
                   </div>
 
-                  <h3 className="task-title">{task.title}</h3>
-                  <p className="task-description">{task.description}</p>
-
-                  {task.context.length > 0 && (
-                    <div className="task-context">
-                      <div className="context-label">Related to:</div>
-                      <div className="context-tags">
-                        {task.context.map((ctx, idx) => (
-                          <span key={idx} className="context-tag">{ctx}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="task-footer">
-                    <div className="task-derived">
-                      <Sparkles size={14} />
-                      Derived from {task.derivedFrom.length} entities
-                    </div>
-                    <div className="task-actions">
-                      <button className="task-action-btn secondary">
-                        View Context
-                      </button>
-                      <button className="task-action-btn primary">
-                        Mark Complete
-                      </button>
-                    </div>
-                  </div>
+                  <button className="delete-task-btn" onClick={() => handleDeleteTask(task.id)}>
+                    <Trash2 size={15} />
+                  </button>
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
-        )}
+        ))}
       </div>
+
+      {/* Add Task Modal */}
+      {showAddModal && (
+        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
+          <div className="task-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Create Contextual Task</h3>
+              <button className="close-btn" onClick={() => setShowAddModal(false)}><X size={20} /></button>
+            </div>
+
+            <form onSubmit={handleCreateTask}>
+              <div className="input-group">
+                <label>Task Title</label>
+                <input 
+                  type="text" 
+                  required 
+                  placeholder="e.g. Bring Insurance Card & ID Proof" 
+                  value={newTaskTitle} 
+                  onChange={e => setNewTaskTitle(e.target.value)} 
+                />
+              </div>
+
+              <div className="input-group">
+                <label>Linked Event / Context</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. Doctor Appointment — Dr. Priya Nair" 
+                  value={newTaskContext} 
+                  onChange={e => setNewTaskContext(e.target.value)} 
+                />
+              </div>
+
+              <div className="input-group">
+                <label>Priority</label>
+                <select value={newTaskPriority} onChange={e => setNewTaskPriority(e.target.value as any)}>
+                  <option value="high">🔴 High (Must Do Before Event)</option>
+                  <option value="medium">🟡 Medium (Should Do)</option>
+                  <option value="low">🟢 Low (Nice to Do)</option>
+                </select>
+              </div>
+
+              <div className="modal-footer">
+                <button type="button" className="btn-secondary" onClick={() => setShowAddModal(false)}>Cancel</button>
+                <button type="submit" className="btn-primary">Add Task</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
 export default Tasks;

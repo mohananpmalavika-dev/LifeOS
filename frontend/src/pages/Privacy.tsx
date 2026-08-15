@@ -1,200 +1,134 @@
-import { Shield, Lock, Database, Eye, Download, Trash2, Check } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Download, Trash2, PauseCircle, PlayCircle } from 'lucide-react';
+import { privacyCenterApi } from '../services/api';
 import './Privacy.css';
 
-function Privacy() {
+export function Privacy() {
+  const [overview, setOverview] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    loadOverview();
+  }, []);
+
+  const loadOverview = async () => {
+    try {
+      setLoading(true);
+      const res = await privacyCenterApi.getOverview();
+      if (res.data?.data) {
+        setOverview(res.data.data);
+        setIsPaused(res.data.data.isPaused);
+      }
+    } catch (e) {
+      console.error('Error loading privacy overview:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTogglePause = async () => {
+    try {
+      const res = await privacyCenterApi.pause(!isPaused);
+      setIsPaused(res.data.isPaused);
+    } catch (e) {
+      console.error('Error toggling pause:', e);
+    }
+  };
+
+  const handleExportData = () => {
+    window.open('/api/privacy-center/export', '_blank');
+  };
+
+  const handleClearLocation = async () => {
+    if (window.confirm("Are you sure you want to delete today's raw location samples?")) {
+      try {
+        await privacyCenterApi.clear('today-location');
+        alert("Today's location history has been cleared.");
+      } catch (e) {
+        console.error('Error clearing location:', e);
+      }
+    }
+  };
+
+  if (loading || !overview) {
+    return <div className="loading-state">Loading Privacy Center...</div>;
+  }
+
+  const { categories } = overview;
+
   return (
     <div className="privacy-page">
       <div className="privacy-header">
         <div>
-          <h1>Privacy Center</h1>
-          <p className="subtitle">Complete transparency and control over your data</p>
+          <h2>Privacy Center</h2>
+          <p className="subtitle">Complete transparency and total user control over your data</p>
+        </div>
+
+        <div className="privacy-top-actions">
+          <button 
+            className={`pause-toggle-btn ${isPaused ? 'paused' : 'active'}`}
+            onClick={handleTogglePause}
+          >
+            {isPaused ? <PlayCircle size={16} /> : <PauseCircle size={16} />}
+            {isPaused ? "Resume LifeOS Sensing" : "Pause LifeOS Sensing"}
+          </button>
         </div>
       </div>
 
-      <div className="privacy-content">
-        {/* Privacy Overview */}
-        <div className="privacy-card highlight">
-          <div className="card-icon">
-            <Shield size={32} />
-          </div>
-          <div className="card-content">
-            <h2>Privacy-First Design</h2>
-            <p>
-              LifeOS is built with privacy as a core principle. All data processing happens 
-              locally on your device. No data is sent to external servers without your explicit consent.
-            </p>
-          </div>
+      {/* Highlights Grid */}
+      <div className="privacy-cards-grid">
+        <div className="priv-category-card device">
+          <div className="card-tag">Stays On Device Only</div>
+          <h3>Local-First Sensors</h3>
+          <ul>
+            {categories.onDeviceOnly.map((c: any, idx: number) => (
+              <li key={idx}>
+                <strong>{c.title}:</strong> {c.description}
+              </li>
+            ))}
+          </ul>
         </div>
 
-        {/* Data Storage */}
-        <div className="section-card">
-          <h3><Database size={20} /> Data Storage</h3>
-          <div className="storage-grid">
-            <div className="storage-item">
-              <div className="storage-header">
-                <Lock size={20} />
-                <h4>Local Storage</h4>
-              </div>
-              <div className="storage-details">
-                <div className="storage-row">
-                  <span className="storage-label">Location:</span>
-                  <span className="storage-value">Device SQLite Database</span>
-                </div>
-                <div className="storage-row">
-                  <span className="storage-label">Encryption:</span>
-                  <span className="storage-value status-success">
-                    <Check size={14} /> At-rest encryption
-                  </span>
-                </div>
-                <div className="storage-row">
-                  <span className="storage-label">Data Types:</span>
-                  <span className="storage-value">
-                    Events, entities, relations, interventions
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="storage-item">
-              <div className="storage-header">
-                <Eye size={20} />
-                <h4>Cloud Storage</h4>
-              </div>
-              <div className="storage-details">
-                <div className="storage-row">
-                  <span className="storage-label">Status:</span>
-                  <span className="storage-value status-disabled">Disabled</span>
-                </div>
-                <div className="storage-row">
-                  <span className="storage-label">Sync:</span>
-                  <span className="storage-value">Not configured</span>
-                </div>
-                <div className="storage-row">
-                  <span className="storage-label">Note:</span>
-                  <span className="storage-value">
-                    Cloud sync can be enabled in settings
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className="priv-category-card blocked">
+          <div className="card-tag blocked">Strictly Blocked</div>
+          <h3>Quarantined Content</h3>
+          <ul>
+            {categories.strictlyBlocked.map((c: any, idx: number) => (
+              <li key={idx}>
+                <strong>{c.title}:</strong> {c.description}
+              </li>
+            ))}
+          </ul>
         </div>
+      </div>
 
-        {/* What We Collect */}
-        <div className="section-card">
-          <h3>What We Collect</h3>
-          <div className="collection-list">
-            <div className="collection-item">
-              <div className="collection-icon">
-                <Check size={16} />
-              </div>
-              <div className="collection-content">
-                <h4>Context Events</h4>
-                <p>Notifications, calendar events, location updates, sensor data</p>
-              </div>
+      {/* Control Actions */}
+      <div className="privacy-actions-section">
+        <h3>Privacy & Data Controls</h3>
+        <div className="actions-grid">
+          <div className="action-control-card">
+            <div>
+              <h4>Export Your LifeOS Data</h4>
+              <p>Download a clean JSON archive of all learned places, entities, tasks, and context.</p>
             </div>
-            <div className="collection-item">
-              <div className="collection-icon">
-                <Check size={16} />
-              </div>
-              <div className="collection-content">
-                <h4>Derived Entities</h4>
-                <p>People, places, tasks, documents extracted from events</p>
-              </div>
-            </div>
-            <div className="collection-item">
-              <div className="collection-icon">
-                <Check size={16} />
-              </div>
-              <div className="collection-content">
-                <h4>Relationships</h4>
-                <p>Connections between entities based on context</p>
-              </div>
-            </div>
-            <div className="collection-item">
-              <div className="collection-icon">
-                <Check size={16} />
-              </div>
-              <div className="collection-content">
-                <h4>Interventions</h4>
-                <p>Generated alerts and their confidence scores</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* What We DON'T Collect */}
-        <div className="section-card">
-          <h3>What We DON'T Collect</h3>
-          <div className="no-collection-list">
-            <div className="no-collection-item">
-              <span>✗ Personal conversations or message content</span>
-            </div>
-            <div className="no-collection-item">
-              <span>✗ Precise GPS coordinates (only place labels)</span>
-            </div>
-            <div className="no-collection-item">
-              <span>✗ Photos or media files</span>
-            </div>
-            <div className="no-collection-item">
-              <span>✗ Browsing history or app usage</span>
-            </div>
-            <div className="no-collection-item">
-              <span>✗ Biometric data</span>
-            </div>
-            <div className="no-collection-item">
-              <span>✗ Financial information</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Data Controls */}
-        <div className="section-card">
-          <h3>Your Data Controls</h3>
-          <div className="controls-grid">
-            <button className="control-btn">
-              <Download size={20} />
-              <div>
-                <div className="control-title">Export Data</div>
-                <div className="control-description">Download all your data in JSON format</div>
-              </div>
-            </button>
-
-            <button className="control-btn danger">
-              <Trash2 size={20} />
-              <div>
-                <div className="control-title">Delete All Data</div>
-                <div className="control-description">Permanently remove all stored data</div>
-              </div>
+            <button className="btn-secondary" onClick={handleExportData}>
+              <Download size={16} /> Download JSON
             </button>
           </div>
-        </div>
 
-        {/* Transparency Metrics */}
-        <div className="section-card">
-          <h3>Transparency Metrics</h3>
-          <div className="metrics-grid">
-            <div className="metric-box">
-              <div className="metric-value">0</div>
-              <div className="metric-label">Third-party trackers</div>
+          <div className="action-control-card">
+            <div>
+              <h4>Clear Today's Location Trail</h4>
+              <p>Immediately purges all raw GPS coordinates logged today.</p>
             </div>
-            <div className="metric-box">
-              <div className="metric-value">0</div>
-              <div className="metric-label">Data shared externally</div>
-            </div>
-            <div className="metric-box">
-              <div className="metric-value">100%</div>
-              <div className="metric-label">Local processing</div>
-            </div>
-            <div className="metric-box">
-              <div className="metric-value">Full</div>
-              <div className="metric-label">User control</div>
-            </div>
+            <button className="btn-danger" onClick={handleClearLocation}>
+              <Trash2 size={16} /> Clear Location
+            </button>
           </div>
         </div>
       </div>
     </div>
   );
 }
-
 export default Privacy;

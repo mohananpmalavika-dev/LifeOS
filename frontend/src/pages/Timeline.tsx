@@ -4,7 +4,7 @@ import { Clock, MapPin, Bell, Calendar } from 'lucide-react';
 import './Timeline.css';
 
 function Timeline() {
-  const [events, setEvents] = useState<TimelineEvent[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'today' | 'week' | 'all'>('today');
 
@@ -138,7 +138,7 @@ function Timeline() {
             <p>Your timeline will appear here as events are processed</p>
           </div>
         ) : (
-          groupedEvents.map(([date, dateEvents]) => (
+          groupedEvents.map(([date, dateEvents]: [string, any[]]) => (
             <div key={date} className="timeline-day">
               <div className="day-header">
                 <div className="day-date">
@@ -148,7 +148,7 @@ function Timeline() {
               </div>
 
               <div className="timeline-track">
-                {dateEvents.map((event, idx) => (
+                {dateEvents.map((event: any, idx: number) => (
                   <div key={idx} className="timeline-event">
                     <div className="event-time">
                       {formatTime(event.timestamp)}
@@ -177,20 +177,20 @@ function Timeline() {
                         <span className="event-source">{event.event.source}</span>
                         <span 
                           className="event-confidence"
-                          style={{ color: getConfidenceColor(event.confidence.finalScore) }}
+                          style={{ color: getConfidenceColor(event.confidence?.finalScore || 0.85) }}
                         >
-                          {Math.round(event.confidence.finalScore * 100)}% confidence
+                          {Math.round((event.confidence?.finalScore || 0.85) * 100)}% confidence
                         </span>
                       </div>
 
-                      {event.event.entities.length > 0 && (
+                      {(event.event?.entities?.length || 0) > 0 && (
                         <div className="event-entities">
-                          {event.event.entities.slice(0, 5).map((entity, idx) => (
+                          {(event.event?.entities || []).slice(0, 5).map((entity: any, idx: number) => (
                             <span key={idx} className="entity-tag">{entity}</span>
                           ))}
-                          {event.event.entities.length > 5 && (
+                          {(event.event?.entities?.length || 0) > 5 && (
                             <span className="entity-tag more">
-                              +{event.event.entities.length - 5} more
+                              +{(event.event?.entities?.length || 0) - 5} more
                             </span>
                           )}
                         </div>

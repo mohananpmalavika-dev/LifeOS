@@ -40,6 +40,34 @@ export class CalendarIntelligenceService {
     this.preparationEngine = new PreparationEngine(db, this.eventClassifier);
     this.documentEngine = new DocumentEngine(db, this.eventClassifier);
     this.scheduleAnalyzer = new ScheduleAnalyzer(this.conflictEngine);
+    this.initializeTables();
+  }
+
+  private initializeTables(): void {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS calendar_events (
+        event_id TEXT PRIMARY KEY,
+        source TEXT NOT NULL,
+        source_event_id TEXT NOT NULL,
+        title TEXT,
+        description TEXT,
+        start_time TEXT NOT NULL,
+        end_time TEXT NOT NULL,
+        timezone TEXT,
+        location_name TEXT,
+        location_address TEXT,
+        location_latitude REAL,
+        location_longitude REAL,
+        organizer_name TEXT,
+        organizer_email TEXT,
+        status TEXT DEFAULT 'CONFIRMED',
+        visibility TEXT DEFAULT 'PUBLIC',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+        sync_state TEXT DEFAULT 'NEW'
+      );
+      CREATE INDEX IF NOT EXISTS idx_calendar_events_start_time ON calendar_events(start_time);
+    `);
   }
   
   /**
@@ -293,9 +321,35 @@ export class CalendarIntelligenceService {
   }
   
   /**
+   * Get events for a specific date
+   */
+  getEventsForDate(date: string): LifeCalendarEvent[] {
+    const start = `${date}T00:00:00.000Z`;
+    const end = `${date}T23:59:59.999Z`;
+    const inRange = this.getEventsInRange(start, end);
+    if (inRange.length > 0) return inRange;
+
+    try {
+      const results = this.db.prepare(`
+        SELECT 
+          event_id as id, source, source_event_id as sourceEventId, title, description,
+          start_time as startTime, end_time as endTime, timezone, location_name,
+          location_address, location_latitude, location_longitude, organizer_name,
+          organizer_email, status, visibility, created_at as createdAt, updated_at as updatedAt, sync_state as syncState
+        FROM calendar_events
+        WHERE start_time LIKE ? OR start_time >= datetime('now', '-6 hours')
+        ORDER BY start_time ASC
+      `).all(`${date}%`) as any[];
+      return results.map(row => this.mapRowToEvent(row));
+    } catch {
+      return [];
+    }
+  }
+
+  /**
    * Get events in date range from database
    */
-  private getEventsInRange(startDate: string, endDate: string): LifeCalendarEvent[] {
+  getEventsInRange(startDate: string, endDate: string): LifeCalendarEvent[] {
     try {
       const results = this.db.prepare(`
         SELECT 

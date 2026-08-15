@@ -1,0 +1,184 @@
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+.onboarding-modal {
+  background: var(--bg-card, #1e293b);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 1.25rem;
+  width: 100%;
+  max-width: 580px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  color: var(--text-primary, #f8fafc);
+}
+.onboarding-progress {
+  display: flex;
+  gap: 6px;
+  padding: 1.25rem 1.5rem 0.5rem;
+}
+.step-bar {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+  transition: background 0.3s;
+}
+.step-bar.active {
+  background: var(--accent-primary, #3b82f6);
+}
+.onboarding-content {
+  padding: 1.5rem 2rem;
+  min-height: 380px;
+}
+.step-icon {
+  margin-bottom: 1rem;
+  color: var(--accent-primary, #3b82f6);
+}
+.step-panel h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+.step-desc {
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin-bottom: 1.25rem;
+}
+.feature-bullets {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 1rem 1.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.bullet-item {
+  font-size: 0.9rem;
+}
+.signals-grid, .pref-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.signal-card, .pref-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.signal-card.selected, .pref-card.selected {
+  border-color: var(--accent-primary, #3b82f6);
+  background: rgba(59, 130, 246, 0.1);
+}
+.signal-card h4, .pref-card h4 {
+  font-size: 0.95rem;
+  margin: 0 0 0.25rem;
+}
+.signal-card p, .pref-card p {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin: 0;
+}
+.privacy-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.priv-row {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.85rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.priv-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 0.35rem;
+}
+.priv-tag.device { background: #0284c7; color: white; }
+.priv-tag.blocked { background: #dc2626; color: white; }
+.priv-tag.encrypted { background: #16a34a; color: white; }
+.priv-row p { font-size: 0.85rem; color: #cbd5e1; margin: 0; }
+.places-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.input-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  color: #e2e8f0;
+}
+.input-group input {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.5rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: white;
+  font-size: 0.9rem;
+}
+.onboarding-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.btn-primary {
+  background: var(--accent-primary, #3b82f6);
+  color: white;
+  border: none;
+  padding: 0.65rem 1.25rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: opacity 0.2s;
+}
+.btn-primary:hover { opacity: 0.9; }
+.btn-secondary {
+  background: transparent;
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 0.65rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.ready-tip {
+  margin-top: 1.5rem;
+  padding: 0.85rem 1rem;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 0.75rem;
+  font-size: 0.9rem;
+  color: #93c5fd;
+}

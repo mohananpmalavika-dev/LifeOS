@@ -1,256 +1,286 @@
 import { useEffect, useState } from 'react';
-import { interventionsApi, tasksApi, timelineApi, stateApi, type Intervention, type Task, type SensorState } from '../services/api';
-import { AlertTriangle, Clock, CheckCircle, MapPin, Battery, Focus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  Navigation, 
+  FileText, 
+  CheckCircle2, 
+  AlertTriangle, 
+  ThumbsUp, 
+  ThumbsDown, 
+  HelpCircle, 
+  ArrowRight,
+  ExternalLink
+} from 'lucide-react';
+import { briefingApi, interventionsApi, BriefingData } from '../services/api';
 import './Home.css';
 
-function Home() {
-  const [interventions, setInterventions] = useState<Intervention[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [recentEvents, setRecentEvents] = useState<any[]>([]);
-  const [sensorState, setSensorState] = useState<SensorState | null>(null);
+export function Home() {
+  const navigate = useNavigate();
+  const [briefing, setBriefing] = useState<BriefingData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [feedbackGiven, setFeedbackGiven] = useState<Record<string, 'up' | 'down'>>({});
+  const [showWhyModal, setShowWhyModal] = useState(false);
+  const [docsChecked, setDocsChecked] = useState<Record<string, boolean>>({
+    'Insurance Card': true,
+    'Medical Records': true,
+  });
 
   useEffect(() => {
-    loadData();
+    loadBriefing();
+    const interval = setInterval(loadBriefing, 15000);
+    return () => clearInterval(interval);
   }, []);
 
-  const loadData = async () => {
+  const loadBriefing = async () => {
     try {
-      setLoading(true);
-      
-      // Load high-priority interventions
-      const interventionsRes = await interventionsApi.getAll({ priority: 'high', limit: 3 });
-      setInterventions(interventionsRes.data.data);
-
-      // Load high-priority tasks
-      const tasksRes = await tasksApi.getHighPriority();
-      setTasks(tasksRes.data.data.slice(0, 5));
-
-      // Load recent timeline events
-      const timelineRes = await timelineApi.getToday();
-      setRecentEvents(timelineRes.data.data.slice(0, 5));
-
-      // Load sensor state
-      const stateRes = await stateApi.get();
-      setSensorState(stateRes.data.data);
-    } catch (error) {
-      console.error('Error loading home data:', error);
+      const res = await briefingApi.getToday();
+      if (res.data?.data) {
+        setBriefing(res.data.data);
+      }
+    } catch (e) {
+      console.error('Error loading briefing:', e);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDismissIntervention = async (id: string) => {
+  const handleFeedback = async (id: string, useful: boolean, reason?: string) => {
     try {
-      await interventionsApi.dismiss(id);
-      setInterventions(interventions.filter(i => i.id !== id));
-    } catch (error) {
-      console.error('Error dismissing intervention:', error);
+      await interventionsApi.feedback(id, useful, reason);
+      setFeedbackGiven(prev => ({ ...prev, [id]: useful ? 'up' : 'down' }));
+    } catch (e) {
+      console.error('Error submitting feedback:', e);
     }
   };
 
-  const handleSnoozeIntervention = async (id: string) => {
-    try {
-      await interventionsApi.snooze(id, 60); // Snooze for 1 hour
-      setInterventions(interventions.filter(i => i.id !== id));
-    } catch (error) {
-      console.error('Error snoozing intervention:', error);
-    }
+  const toggleDoc = (name: string) => {
+    setDocsChecked(prev => ({ ...prev, [name]: !prev[name] }));
   };
 
-  const getPriorityColor = (score: number) => {
-    if (score >= 0.80) return 'var(--accent-danger)';
-    if (score >= 0.65) return 'var(--accent-warning)';
-    return 'var(--accent-success)';
-  };
-
-  const getPriorityLabel = (score: number) => {
-    if (score >= 0.80) return 'HIGH';
-    if (score >= 0.65) return 'MEDIUM';
-    return 'LOW';
-  };
-
-  if (loading) {
+  if (loading || !briefing) {
     return (
-      <div className="home-page">
-        <div className="home-header">
-          <div className="skeleton" style={{ width: '200px', height: '40px' }}></div>
-          <div className="skeleton" style={{ width: '300px', height: '24px', marginTop: '0.5rem' }}></div>
-        </div>
-        <div className="home-content">
-          <div className="skeleton" style={{ width: '100%', height: '200px' }}></div>
-        </div>
+      <div className="home-loading">
+        <div className="loader-pulse" />
+        <p>Connecting to LifeOS Ambient Intelligence...</p>
       </div>
     );
   }
 
-  const primaryIntervention = interventions[0];
+  const { nowCard, nextCard, attentionItems, greeting, summaryText, feasibilityScore } = briefing;
 
   return (
-    <div className="home-page">
-      {/* Header */}
-      <div className="home-header">
-        <div>
-          <h1>Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'} 👋</h1>
-          <p className="subtitle">
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-          </p>
+    <div className="home-screen">
+      {/* Daily Briefing Banner */}
+      <section className="briefing-header-card">
+        <div className="briefing-left">
+          <h1>{greeting}</h1>
+          <p className="briefing-summary">{summaryText}</p>
         </div>
+        <div className="feasibility-badge" onClick={() => navigate('/calendar')} title="Click to view daily schedule feasibility">
+          <div className="score-number">{feasibilityScore}%</div>
+          <div className="score-label">Feasible Day</div>
+        </div>
+      </section>
 
-        {/* Sensor state indicators */}
-        {sensorState && (
-          <div className="sensor-indicators">
-            <div className="sensor-item">
-              <Battery size={16} />
-              <span>{Math.round(sensorState.batteryLevel * 100)}%</span>
-            </div>
-            <div className="sensor-item">
-              <Focus size={16} />
-              <span>{sensorState.focusState}</span>
-            </div>
-            {sensorState.location.placeLabel && (
-              <div className="sensor-item">
-                <MapPin size={16} />
-                <span>{sensorState.location.placeLabel}</span>
-              </div>
-            )}
+      {/* NOW CARD: Primary Hero */}
+      {nowCard && (
+        <section className="hero-now-card">
+          <div className="card-tag now">
+            <span className="pulse-dot" /> NOW COMMITMENT
           </div>
-        )}
-      </div>
 
-      <div className="home-content">
-        {/* Primary Intervention Card */}
-        {primaryIntervention ? (
-          <div className="primary-intervention-card">
-            <div className="intervention-header">
-              <div className="intervention-icon">
-                <AlertTriangle size={24} />
-              </div>
-              <div className="intervention-meta">
+          <div className="now-header">
+            <div>
+              <h2>{nowCard.title}</h2>
+              <p className="event-location-text">
+                📍 {nowCard.location?.name || 'City Specialty Hospital'} · {nowCard.location?.address || 'MG Road, Kochi'}
+              </p>
+            </div>
+            <div className="departure-countdown-badge">
+              <span className="leave-label">LEAVE BY</span>
+              <span className="leave-time">{nowCard.leaveByTime}</span>
+              <span className="time-remaining">({nowCard.minutesUntil > 0 ? `in ${Math.floor(nowCard.minutesUntil / 60)}h ${nowCard.minutesUntil % 60}m` : 'Immediate'})</span>
+            </div>
+          </div>
+
+          {/* Details Bar */}
+          <div className="now-details-strip">
+            <div className="detail-item">
+              <span className="label">Estimated Travel</span>
+              <strong>🚗 {nowCard.travelMinutes} mins (from {nowCard.origin})</strong>
+            </div>
+            <div className="detail-item">
+              <span className="label">Schedule Time</span>
+              <strong>🕒 {new Date(nowCard.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} – {new Date(nowCard.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</strong>
+            </div>
+          </div>
+
+          {/* Document Readiness Checklist */}
+          <div className="prep-checklist-box">
+            <div className="checklist-title">
+              <FileText size={16} /> Required Preparation Documents
+            </div>
+            <div className="docs-pills-row">
+              {nowCard.documents?.map(doc => (
                 <div 
-                  className="intervention-priority"
-                  style={{ color: getPriorityColor(primaryIntervention.score) }}
+                  key={doc.name} 
+                  className={`doc-pill ${docsChecked[doc.name] ? 'ready' : ''}`}
+                  onClick={() => toggleDoc(doc.name)}
                 >
-                  {getPriorityLabel(primaryIntervention.score)} PRIORITY
+                  {docsChecked[doc.name] ? <CheckCircle2 size={16} className="text-success" /> : <div className="doc-box" />}
+                  <span>{doc.name}</span>
+                  <span className="doc-status">{docsChecked[doc.name] ? 'Ready' : 'Pending'}</span>
                 </div>
-                <div className="intervention-confidence">
-                  {Math.round(primaryIntervention.score * 100)}% confidence
+              ))}
+            </div>
+          </div>
+
+          {/* Action Row */}
+          <div className="now-actions-row">
+            <button 
+              className="action-btn primary"
+              onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(nowCard.location?.address || nowCard.location?.name || 'City Hospital')}`, '_blank')}
+            >
+              <Navigation size={16} /> Start Navigation <ExternalLink size={14} />
+            </button>
+            <button className="action-btn secondary" onClick={() => alert("Marked as on the way! LifeOS will track your arrival.")}>
+              I'm on my way
+            </button>
+            <button className="action-btn ghost" onClick={() => setShowWhyModal(true)}>
+              <HelpCircle size={15} /> Why am I seeing this?
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* NEXT Card & Quick Schedule Preview */}
+      {nextCard && (
+        <section className="next-event-card">
+          <div className="card-tag next">NEXT UP</div>
+          <div className="next-body">
+            <div>
+              <h3>{nextCard.title}</h3>
+              <p className="time-info">🕒 {new Date(nextCard.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · {nextCard.location?.name || 'Office'} ({nextCard.travelMinutes} min travel)</p>
+            </div>
+            <button className="view-link-btn" onClick={() => navigate('/calendar')}>
+              View Calendar <ArrowRight size={14} />
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* NEEDS ATTENTION Card */}
+      {attentionItems.length > 0 && (
+        <section className="attention-section">
+          <div className="section-title">
+            <AlertTriangle size={18} className="text-warning" /> Needs Attention
+          </div>
+
+          <div className="attention-grid">
+            {attentionItems.map(item => (
+              <div key={item.id} className={`attention-card ${item.type.toLowerCase()}`}>
+                <div className="card-header-bar">
+                  <span className={`type-badge ${item.type.toLowerCase()}`}>{item.type}</span>
+                  <span className="time-ago">Active Insight</span>
+                </div>
+
+                <h4>{item.title}</h4>
+                <p className="summary-desc">{item.summary || item.recommendation || item.reason}</p>
+
+                {/* Direct Action Surfaces */}
+                <div className="card-footer-action">
+                  {item.title.includes('Bill') || item.title.includes('Electricity') ? (
+                    <div className="btn-group">
+                      <button className="quick-action-btn primary" onClick={() => alert("Reminder added to your Tasks checklist.")}>
+                        Add to Tasks
+                      </button>
+                      <button className="quick-action-btn outline" onClick={() => alert("Payment portal opened.")}>
+                        Pay ₹2,431 Now
+                      </button>
+                    </div>
+                  ) : item.type === 'CONFLICT' ? (
+                    <button className="quick-action-btn primary" onClick={() => navigate('/calendar')}>
+                      See Reschedule Options
+                    </button>
+                  ) : (
+                    <button className="quick-action-btn primary" onClick={() => alert("Notification acknowledged.")}>
+                      Acknowledge
+                    </button>
+                  )}
+
+                  {/* Feedback Thumb Loop */}
+                  <div className="feedback-thumbs">
+                    <span className="feedback-label">Useful?</span>
+                    <button 
+                      className={`thumb-btn ${feedbackGiven[item.id] === 'up' ? 'active' : ''}`} 
+                      onClick={() => handleFeedback(item.id, true)} 
+                      title="Helpful"
+                    >
+                      <ThumbsUp size={14} />
+                    </button>
+                    <button 
+                      className={`thumb-btn ${feedbackGiven[item.id] === 'down' ? 'active' : ''}`} 
+                      onClick={() => handleFeedback(item.id, false, "Not relevant")} 
+                      title="Not useful"
+                    >
+                      <ThumbsDown size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* WHY AM I SEEING THIS MODAL */}
+      {showWhyModal && nowCard?.reasoning && (
+        <div className="modal-overlay" onClick={() => setShowWhyModal(false)}>
+          <div className="why-modal" onClick={e => e.stopPropagation()}>
+            <h3>Why am I seeing this departure alert?</h3>
+            <p className="why-subtitle">LifeOS fused multiple privacy-first digital signals to generate this recommendation:</p>
+
+            <div className="reasoning-chain">
+              <div className="chain-step">
+                <div className="step-num">1</div>
+                <div>
+                  <strong>Calendar Schedule:</strong>
+                  <p>You have a confirmed appointment <em>"{nowCard.title}"</em> scheduled for {new Date(nowCard.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.</p>
+                </div>
+              </div>
+
+              <div className="chain-step">
+                <div className="step-num">2</div>
+                <div>
+                  <strong>Location Intelligence:</strong>
+                  <p>You are currently at <strong>{nowCard.reasoning.originPlace}</strong>. The destination is <strong>{nowCard.reasoning.destinationPlace}</strong>.</p>
+                </div>
+              </div>
+
+              <div className="chain-step">
+                <div className="step-num">3</div>
+                <div>
+                  <strong>Travel & Buffer Computation:</strong>
+                  <p>{nowCard.reasoning.travelTimeText} + {nowCard.reasoning.prepBufferText}.</p>
+                </div>
+              </div>
+
+              <div className="chain-step">
+                <div className="step-num">4</div>
+                <div>
+                  <strong>Confidence & Readiness:</strong>
+                  <p>Confidence score: <strong className="text-success">{nowCard.reasoning.confidence}%</strong>. Required documents were cross-referenced against your local memory.</p>
                 </div>
               </div>
             </div>
 
-            <h2 className="intervention-title">{primaryIntervention.title}</h2>
-            <p className="intervention-summary">{primaryIntervention.summary}</p>
-
-            <div className="intervention-reason">
-              <h4>Why am I seeing this?</h4>
-              <p>{primaryIntervention.reason}</p>
-            </div>
-
-            <div className="intervention-actions">
-              <button 
-                className="btn-primary"
-                onClick={() => handleDismissIntervention(primaryIntervention.id)}
-              >
-                I'll take it
-              </button>
-              <button 
-                className="btn-secondary"
-                onClick={() => handleSnoozeIntervention(primaryIntervention.id)}
-              >
-                Not needed
-              </button>
+            <div className="modal-actions-right">
+              <button className="btn-primary" onClick={() => setShowWhyModal(false)}>Got it</button>
             </div>
           </div>
-        ) : (
-          <div className="no-interventions-card">
-            <CheckCircle size={48} />
-            <h3>All caught up</h3>
-            <p>No urgent interventions right now</p>
-          </div>
-        )}
-
-        {/* Quick View Grid */}
-        <div className="quick-view-grid">
-          {/* High Priority Tasks */}
-          <div className="quick-view-card">
-            <h3>
-              <CheckCircle size={20} />
-              High Priority Tasks
-            </h3>
-            {tasks.length > 0 ? (
-              <ul className="task-list">
-                {tasks.map((task) => (
-                  <li key={task.id} className="task-item">
-                    <div className="task-content">
-                      <div className="task-title">{task.title}</div>
-                      <div className="task-meta">
-                        {task.dueDate && (
-                          <span className="task-due">
-                            <Clock size={12} />
-                            {new Date(task.dueDate).toLocaleString()}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="empty-state">No high-priority tasks</p>
-            )}
-          </div>
-
-          {/* Recent Activity */}
-          <div className="quick-view-card">
-            <h3>
-              <Clock size={20} />
-              Recent Activity
-            </h3>
-            {recentEvents.length > 0 ? (
-              <ul className="activity-list">
-                {recentEvents.map((event, idx) => (
-                  <li key={idx} className="activity-item">
-                    <div className="activity-dot"></div>
-                    <div className="activity-content">
-                      <div className="activity-title">{event.event.event}</div>
-                      <div className="activity-time">
-                        {new Date(event.timestamp).toLocaleTimeString()}
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="empty-state">No recent activity</p>
-            )}
-          </div>
-
-          {/* Other Interventions */}
-          {interventions.length > 1 && (
-            <div className="quick-view-card">
-              <h3>
-                <AlertTriangle size={20} />
-                Other Alerts
-              </h3>
-              <ul className="intervention-list">
-                {interventions.slice(1).map((intervention) => (
-                  <li key={intervention.id} className="intervention-item">
-                    <div className="intervention-content">
-                      <div className="intervention-title-small">{intervention.title}</div>
-                      <div className="intervention-score">
-                        {Math.round(intervention.score * 100)}%
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
-      </div>
+      )}
     </div>
   );
 }
-
 export default Home;

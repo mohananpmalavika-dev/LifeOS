@@ -9,27 +9,6 @@ const api = axios.create({
   },
 });
 
-// Request interceptor for logging
-api.interceptors.request.use(
-  (config) => {
-    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor for error handling
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    console.error('API Error:', error.response?.data || error.message);
-    return Promise.reject(error);
-  }
-);
-
-// Type definitions
 export interface Intervention {
   id: string;
   title: string;
@@ -47,21 +26,66 @@ export interface ActionSurface {
   trigger: string;
 }
 
-export interface TimelineEvent {
-  event: NormalizedEvent;
-  confidence: any;
-  intervention: Intervention | null;
-  timestamp: string;
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  priority: 'high' | 'medium' | 'low';
+  category?: 'MUST_DO' | 'SHOULD_DO' | 'NICE_TO_DO';
+  tag?: 'scheduled' | 'location' | 'person' | 'preparation';
+  eventContext?: string;
+  dueDate?: string;
+  completed?: boolean;
 }
 
-export interface NormalizedEvent {
-  id: string;
-  event: string;
-  source: string;
+export interface BriefingData {
+  greeting: string;
+  summaryText: string;
+  currentLocation: string;
+  nowCard: {
+    eventId: string;
+    title: string;
+    description?: string;
+    startTime: string;
+    endTime: string;
+    location?: { name?: string; address?: string; latitude?: number; longitude?: number };
+    minutesUntil: number;
+    travelMinutes: number;
+    leaveByTime: string;
+    travelMode: string;
+    origin: string;
+    documents: Array<{ name: string; required?: boolean; ready?: boolean }>;
+    reasoning?: {
+      confidence: number;
+      originPlace: string;
+      destinationPlace: string;
+      travelTimeText: string;
+      prepBufferText: string;
+    };
+  } | null;
+  nextCard: {
+    eventId: string;
+    title: string;
+    startTime: string;
+    endTime: string;
+    location?: { name?: string };
+    travelMinutes: number;
+  } | null;
+  attentionItems: Array<{
+    id: string;
+    type: string;
+    severity: string;
+    title: string;
+    summary?: string;
+    reason?: string;
+    recommendation?: string;
+    surfaces?: ActionSurface[];
+    score?: number;
+    timestamp: string;
+  }>;
+  feasibilityScore: number;
+  totalEvents: number;
   timestamp: string;
-  entities: string[];
-  metadata: Record<string, any>;
-  confidence: number;
 }
 
 export interface ContextEntity {
@@ -80,30 +104,6 @@ export interface ContextRelation {
   type: string;
   confidence: number;
   createdAt: string;
-}
-
-export interface Task {
-  id: string;
-  title: string;
-  description: string;
-  priority: 'high' | 'medium' | 'low';
-  dueDate?: string;
-  context: string[];
-  derivedFrom: string[];
-}
-
-export interface SensorState {
-  batteryLevel: number;
-  focusState: 'focused' | 'distracted' | 'idle' | 'offline';
-  motionState: 'stationary' | 'walking' | 'driving' | 'transit';
-  location: {
-    latitude?: number;
-    longitude?: number;
-    placeLabel?: string;
-    geofence?: string;
-  };
-  ambientSoundLevel?: number;
-  lastUpdated: string;
 }
 
 export interface Insights {
@@ -136,99 +136,125 @@ export interface Insights {
   timestamp: string;
 }
 
-// API Methods
+export interface TimelineEvent {
+  id: string;
+  event: string;
+  timestamp: string;
+  source: string;
+  confidence?: number;
+  metadata?: Record<string, any>;
+  entities?: ContextEntity[];
+  intervention?: Intervention;
+}
+
+export interface SensorState {
+  batteryLevel: number;
+  focusState: string;
+  motionState: string;
+  location: {
+    latitude?: number;
+    longitude?: number;
+    placeLabel?: string;
+    geofence?: string;
+  };
+  ambientSoundLevel?: number;
+  lastUpdated: string;
+}
+
+export const briefingApi = {
+  getToday: () => api.get<{ success: boolean; data: BriefingData }>('/briefing/today'),
+  getEvening: () => api.get<{ success: boolean; data: any }>('/briefing/evening'),
+};
+
+export const askApi = {
+  ask: (query: string) => api.post<{ success: boolean; data: any }>('/ask', { query }),
+};
+
+export const memoryApi = {
+  getAll: () => api.get<{ success: boolean; data: any; totalItems: number }>('/memory'),
+  forget: (id: string) => api.delete<{ success: boolean; message: string }>(`/memory/${id}`),
+};
+
+export const privacyCenterApi = {
+  getOverview: () => api.get<{ success: boolean; data: any }>('/privacy-center/overview'),
+  clear: (scope: string) => api.post<{ success: boolean; message: string }>('/privacy-center/clear', { scope }),
+  pause: (paused?: boolean) => api.post<{ success: boolean; isPaused: boolean }>('/privacy-center/pause', { paused }),
+};
+
 export const interventionsApi = {
-  getAll: (params?: { priority?: string; limit?: number }) =>
-    api.get<{ success: boolean; data: Intervention[] }>('/interventions', { params }),
-  
+  getAll: (params?: { priority?: string; limit?: number; dismissed?: boolean }) =>
+    api.get<{ success: boolean; count: number; data: Intervention[] }>('/interventions', { params }),
   getById: (id: string) =>
     api.get<{ success: boolean; data: Intervention }>(`/interventions/${id}`),
-  
   dismiss: (id: string) =>
     api.delete<{ success: boolean; message: string }>(`/interventions/${id}`),
-  
   snooze: (id: string, duration: number) =>
     api.post<{ success: boolean; message: string }>(`/interventions/${id}/snooze`, { duration }),
-};
-
-export const timelineApi = {
-  getAll: (params?: { startDate?: string; endDate?: string; limit?: number }) =>
-    api.get<{ success: boolean; data: TimelineEvent[] }>('/timeline', { params }),
-  
-  getToday: () =>
-    api.get<{ success: boolean; data: TimelineEvent[] }>('/timeline/today'),
-  
-  getWeek: () =>
-    api.get<{ success: boolean; data: TimelineEvent[] }>('/timeline/week'),
-};
-
-export const contextApi = {
-  getGraph: () =>
-    api.get<{ success: boolean; data: { entities: ContextEntity[]; relations: ContextRelation[] } }>('/context/graph'),
-  
-  getEntity: (entityId: string) =>
-    api.get<{ success: boolean; data: { entity: ContextEntity; relations: ContextRelation[]; relatedEntities: ContextEntity[] } }>(`/context/graph/${entityId}`),
-  
-  getRelations: (params?: { sourceId?: string; targetId?: string; type?: string }) =>
-    api.get<{ success: boolean; data: ContextRelation[] }>('/context/relations', { params }),
+  feedback: (id: string, useful: boolean, reason?: string) =>
+    api.post<{ success: boolean; message: string }>(`/interventions/${id}/feedback`, { useful, reason }),
+  getFeedbackStats: () =>
+    api.get<{ success: boolean; data: any }>('/interventions/feedback/stats'),
 };
 
 export const tasksApi = {
-  getAll: (params?: { priority?: string }) =>
-    api.get<{ success: boolean; data: Task[] }>('/tasks', { params }),
-  
+  getAll: (params?: { priority?: string; eventContext?: string; completed?: boolean }) =>
+    api.get<{ success: boolean; count: number; data: Task[]; eventGroups: Record<string, Task[]>; summary: any }>('/tasks', { params }),
   getHighPriority: () =>
-    api.get<{ success: boolean; data: Task[] }>('/tasks/high-priority'),
+    api.get<{ success: boolean; count: number; data: Task[] }>('/tasks/high-priority'),
+  create: (task: Partial<Task>) =>
+    api.post<{ success: boolean; data: Task; message: string }>('/tasks', task),
+  update: (id: string, updates: Partial<Task>) =>
+    api.patch<{ success: boolean; data: Task; message: string }>(`/tasks/${id}`, updates),
+  delete: (id: string) =>
+    api.delete<{ success: boolean; message: string }>(`/tasks/${id}`),
+};
+
+export const calendarApi = {
+  getEvents: (params?: { startDate?: string; endDate?: string }) =>
+    api.get('/calendar/schedule', { params }),
+  getConflicts: (params?: { startDate?: string; endDate?: string }) =>
+    api.get('/calendar/conflicts', { params }),
+  getFeasibility: (date: string) =>
+    api.get(`/calendar/feasibility/${date}`),
+  createEvent: (event: any) =>
+    api.post('/calendar/events', event),
+  deleteEvent: (id: string) =>
+    api.delete(`/calendar/events/${id}`),
+};
+
+export const stateApi = {
+  get: () => api.get<{ success: boolean; data: SensorState }>('/state'),
+  update: (updates: Partial<SensorState>) => api.put<{ success: boolean; data: SensorState }>('/state', updates),
+  getFocusMode: () => api.get<{ success: boolean; mode: string; description: string }>('/state/focus-mode'),
+  setFocusMode: (mode: string) => api.post<{ success: boolean; mode: string; description: string }>('/state/focus-mode', { mode }),
 };
 
 export const entitiesApi = {
   getAll: (params?: { type?: string; search?: string; limit?: number }) =>
     api.get<{ success: boolean; data: ContextEntity[] }>('/entities', { params }),
-  
-  getPeople: () =>
-    api.get<{ success: boolean; data: ContextEntity[] }>('/entities/people'),
-  
-  getPlaces: () =>
-    api.get<{ success: boolean; data: ContextEntity[] }>('/entities/places'),
-  
-  getDocuments: () =>
-    api.get<{ success: boolean; data: ContextEntity[] }>('/entities/documents'),
-  
-  getEvents: () =>
-    api.get<{ success: boolean; data: ContextEntity[] }>('/entities/events'),
-  
   getById: (id: string) =>
     api.get<{ success: boolean; data: { entity: ContextEntity; relatedEntities: ContextEntity[] } }>(`/entities/${id}`),
+  getPeople: () =>
+    api.get<{ success: boolean; data: ContextEntity[] }>('/entities/people'),
+  getPlaces: () =>
+    api.get<{ success: boolean; data: ContextEntity[] }>('/entities/places'),
+  getDocuments: () =>
+    api.get<{ success: boolean; data: ContextEntity[] }>('/entities/documents'),
+};
+
+export const contextApi = {
+  getGraph: () => api.get<{ success: boolean; data: { entities: ContextEntity[]; relations: ContextRelation[] } }>('/context/graph'),
+  getStats: () => api.get('/context/stats'),
 };
 
 export const insightsApi = {
-  getAll: () =>
-    api.get<{ success: boolean; data: Insights }>('/insights'),
-  
-  getMetrics: () =>
-    api.get<{ success: boolean; data: Insights['metrics'] }>('/insights/metrics'),
-  
-  getDistributions: () =>
-    api.get<{ success: boolean; data: Insights['distributions'] }>('/insights/distributions'),
+  getAll: () => api.get<{ success: boolean; data: Insights }>('/insights'),
 };
 
-export const stateApi = {
-  get: () =>
-    api.get<{ success: boolean; data: SensorState }>('/state'),
-  
-  update: (updates: Partial<SensorState>) =>
-    api.put<{ success: boolean; data: SensorState }>('/state', updates),
-  
-  patch: (updates: Partial<SensorState>) =>
-    api.patch<{ success: boolean; data: SensorState }>('/state', updates),
-};
-
-export const eventsApi = {
-  process: (event: NormalizedEvent) =>
-    api.post<{ success: boolean; data: any }>('/events', event),
-  
-  publish: (event: NormalizedEvent) =>
-    api.post<{ success: boolean; message: string }>('/events/publish', event),
+export const timelineApi = {
+  getToday: () => api.get<{ success: boolean; data: TimelineEvent[] }>('/timeline/today'),
+  getWeek: () => api.get<{ success: boolean; data: TimelineEvent[] }>('/timeline/week'),
+  getAll: (params?: { limit?: number }) => api.get<{ success: boolean; data: TimelineEvent[] }>('/timeline', { params }),
 };
 
 export { api };
