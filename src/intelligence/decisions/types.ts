@@ -35,13 +35,14 @@ export interface ConfidenceBreakdown {
 export interface ActionCandidate {
   id: string;
   type: CandidateType;
+  category?: string;
   title: string;
   summary: string;
   urgency: number;      // 0 - 1
   importance: number;   // 0 - 1
   confidence: number;   // 0 - 1
   confidenceBreakdown: ConfidenceBreakdown;
-  score: number;        // Composite rank score (urgency * 0.4 + importance * 0.4 + confidence * 0.2)
+  score: number;        // Computed consistently: (urgency * 0.40 + importance * 0.40 + confidence * 0.20) * categorySensitivity
   timing?: {
     recommendedAt?: string;
     deadline?: string;
@@ -72,6 +73,8 @@ export interface CalendarContext {
   description?: string;
   travelMinutes?: number;
   prepMinutes?: number;
+  requiredDocuments?: Array<{ name: string; required?: boolean; ready?: boolean }>;
+  preparationItems?: Array<{ type: string; description: string }>;
 }
 
 export interface NotificationContext {
@@ -88,15 +91,17 @@ export interface TaskContext {
   id: string;
   title: string;
   priority: 'high' | 'medium' | 'low';
+  category?: 'MUST_DO' | 'SHOULD_DO' | 'NICE_TO_DO';
   dueDate?: string;
   eventContext?: string;
+  completed?: boolean;
 }
 
 export interface CurrentSituation {
   timestamp: string;
   location: {
     place?: string;
-    state: string; // 'HOME', 'OFFICE', 'IN_TRANSIT', 'UNKNOWN'
+    state: string;
     latitude?: number;
     longitude?: number;
     confidence: number;
@@ -113,6 +118,10 @@ export interface CurrentSituation {
   device: {
     online: boolean;
     batteryLevel: number;
+  };
+  userPreferences: {
+    departureBufferOffsetMin: number;
+    categorySensitivity: Record<string, number>;
   };
 }
 

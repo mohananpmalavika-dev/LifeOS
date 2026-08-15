@@ -6,9 +6,9 @@ export function createDecisionsRouter(db: Database.Database): Router {
   const router = Router();
   const engine = new NextBestActionEngine(db);
 
-  router.get('/current', (_req: Request, res: Response) => {
+  router.get('/current', async (_req: Request, res: Response) => {
     try {
-      const situation = engine.buildCurrentSituation();
+      const situation = await engine.buildCurrentSituationAsync();
       const decision = engine.decide(situation);
 
       res.json({
@@ -21,9 +21,9 @@ export function createDecisionsRouter(db: Database.Database): Router {
     }
   });
 
-  router.get('/debugger', (_req: Request, res: Response) => {
+  router.get('/debugger', async (_req: Request, res: Response) => {
     try {
-      const situation = engine.buildCurrentSituation();
+      const situation = await engine.buildCurrentSituationAsync();
       const decision = engine.decide(situation);
 
       res.json({

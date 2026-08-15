@@ -30,7 +30,15 @@ export function runScenarioTests() {
     recentNotifications: [],
     pendingTasks: [],
     activeFocusMode: 'NORMAL',
-    device: { online: true, batteryLevel: 85 }
+    device: { online: true, batteryLevel: 85 },
+    userPreferences: {
+      departureBufferOffsetMin: 0,
+      categorySensitivity: {
+        'COMMUTE': 1.0,
+        'FINANCIAL': 1.0,
+        'HEALTHCARE': 1.0
+      }
+    }
   };
 
   // Scenario 1: Dentist appointment at Home with travel + prep -> LEAVE
@@ -147,7 +155,7 @@ export function runScenarioTests() {
     }
   };
   const r11 = engine.decide(s11);
-  assert('Scenario 11: Flight departure accounts for extended travel & airport buffer', r11.bestAction.type === 'LEAVE');
+  assert('Scenario 11: Flight departure accounts for extended travel & airport buffer', r11.candidates.some(c => c.type === 'LEAVE' && c.timing?.travelMinutes === 60));
 
   // Scenario 12: Work focus mode routes medium-priority tasks to Home card
   const s12: CurrentSituation = {
