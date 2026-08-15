@@ -8,9 +8,7 @@ export function createDecisionsRouter(db: Database.Database): Router {
 
   router.get('/current', async (_req: Request, res: Response) => {
     try {
-      const situation = await engine.buildCurrentSituationAsync();
-      const decision = engine.decide(situation);
-
+      const decision = await engine.getDecision();
       res.json({
         success: true,
         data: decision,
@@ -23,13 +21,11 @@ export function createDecisionsRouter(db: Database.Database): Router {
 
   router.get('/debugger', async (_req: Request, res: Response) => {
     try {
-      const situation = await engine.buildCurrentSituationAsync();
-      const decision = engine.decide(situation);
-
+      const decision = await engine.getDecision();
       res.json({
         success: true,
         data: {
-          situation,
+          situation: decision.situation,
           candidates: decision.candidates,
           bestAction: decision.bestAction,
           surface: decision.surface,

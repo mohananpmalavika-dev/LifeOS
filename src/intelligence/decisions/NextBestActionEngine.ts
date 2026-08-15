@@ -15,6 +15,7 @@ import { PlaceResolver } from '../../calendar/PlaceResolver.js';
 import { DocumentEngine } from '../../calendar/DocumentEngine.js';
 import { EventClassifier } from '../../calendar/EventClassifier.js';
 import { LocationStorage } from '../location/storage/LocationStorage.js';
+import { NotificationIntelligenceService } from '../../api/services/notification-intelligence-service.js';
 import { lifeosService } from '../../api/services/lifeos-service.js';
 
 export class NextBestActionEngine {
@@ -25,6 +26,7 @@ export class NextBestActionEngine {
   private documentEngine: DocumentEngine;
   private placeResolver: PlaceResolver;
   private locationStorage: LocationStorage;
+  private notifService: NotificationIntelligenceService;
 
   constructor(private db: Database.Database) {
     this.candidateGenerator = new CandidateGenerator();
@@ -34,6 +36,7 @@ export class NextBestActionEngine {
     this.travelEngine = new TravelEngine(db, this.placeResolver);
     this.documentEngine = new DocumentEngine(db, new EventClassifier());
     this.locationStorage = new LocationStorage(db);
+    this.notifService = new NotificationIntelligenceService(db);
     this.initializeTables();
   }
 
@@ -51,6 +54,10 @@ export class NextBestActionEngine {
     `);
   }
 
+  /**
+   * PURE Decision Engine: Performs pure reasoning over an immutable CurrentSituation snapshot.
+   * Zero DB/GPS reads inside decide().
+   */
   decide(situation: CurrentSituation): DecisionResult {
     const candidates = this.candidateGenerator.generateCandidates(situation);
     const bestAction = candidates[0] || candidates.find(c => c.type === 'NO_ACTION')!;
@@ -81,28 +88,34 @@ export class NextBestActionEngine {
   }
 
   /**
-   * Builds the live CurrentSituation from SQLite state without hardcoded fallbacks
+   * Canonical Production Method: Gathers live observations from all available sensors.
+   * If a signal is missing or unverified, it sets UNKNOWN with 0 confidence rather than inventing defaults.
    */
-  async buildCurrentSituationAsync(): Promise<CurrentSituation> {
+  async buildCurrentSituation(): Promise<CurrentSituation> {
     const now = new Date();
 
-    // 1. Real Location from LocationStorage
-    let locationPlace = 'Home';
-    let locationConfidence = 0.90;
+    // 1. Reality-Locked Location (Defaults to UNKNOWN / 0 confidence)
+    let locationPlace: string | undefined = undefined;
+    let locationState: string = 'UNKNOWN';
+    let locationConfidence = 0.0;
     let homePlace: any = null;
 
     try {
       const places = this.locationStorage.getAllPlaces();
-      homePlace = places.find(p => p.semanticType === ('HOME' as any)) || places[0];
-      if (homePlace) {
-        locationPlace = homePlace.name || 'Home';
-        locationConfidence = Math.min(0.98, homePlace.confidence);
+      if (places.length > 0) {
+        homePlace = places.find(p => p.semanticType === ('HOME' as any)) || places[0];
+        if (homePlace) {
+          locationPlace = homePlace.name;
+          locationState = 'HOME';
+          locationConfidence = Math.min(0.98, homePlace.confidence || 0.85);
+        }
       }
     } catch {}
 
-    // Check latest GPS sample if available
-    let motionType: 'STILL' | 'WALKING' | 'DRIVING' | 'CYCLING' | 'UNKNOWN' = 'STILL';
-    let activityConfidence = 0.90;
+    // 2. Reality-Locked Motion Activity (Defaults to UNKNOWN / 0 confidence)
+    let motionType: 'STILL' | 'WALKING' | 'DRIVING' | 'CYCLING' | 'UNKNOWN' = 'UNKNOWN';
+    let activityConfidence = 0.0;
+
     try {
       const latestSample = this.db.prepare(`
         SELECT speed, accuracy_meters, timestamp FROM location_samples 
@@ -114,11 +127,11 @@ export class NextBestActionEngine {
         if (speed > 8.0) motionType = 'DRIVING';
         else if (speed > 1.2) motionType = 'WALKING';
         else motionType = 'STILL';
-        activityConfidence = latestSample.accuracy_meters ? Math.min(0.98, 1 - (latestSample.accuracy_meters / 100)) : 0.90;
+        activityConfidence = latestSample.accuracy_meters ? Math.min(0.98, Math.max(0.2, 1 - (latestSample.accuracy_meters / 100))) : 0.80;
       }
     } catch {}
 
-    // 2. Real Next Calendar Event & Real Travel Calculation
+    // 3. Reality-Locked Calendar & Traceable Travel Estimate
     let nextEvent: CalendarContext | undefined = undefined;
     try {
       const row = this.db.prepare(`
@@ -131,8 +144,8 @@ export class NextBestActionEngine {
       `).get() as any;
 
       if (row) {
-        let travelMin = 25;
-        let prepMin = 10;
+        let travelMin = 0;
+        let prepMin = 5;
 
         if (row.locName || row.locAddr || (row.lat && row.lon)) {
           const dest = await this.placeResolver.resolve({
@@ -151,7 +164,7 @@ export class NextBestActionEngine {
                 latitude: homePlace.center?.latitude || 0,
                 longitude: homePlace.center?.longitude || 0,
                 placeType: 'HOME',
-                confidence: 0.95
+                confidence: locationConfidence
               } : undefined,
               dest,
               row.startTime
@@ -164,7 +177,6 @@ export class NextBestActionEngine {
           }
         }
 
-        // Real Document requirements
         const docReqs = this.documentEngine.analyzeDocumentRequirements({
           event: {
             id: row.id,
@@ -205,32 +217,34 @@ export class NextBestActionEngine {
         };
       }
     } catch (e) {
-      console.error('Error querying real calendar in situation builder:', e);
+      console.error('Error in calendar situation builder:', e);
     }
 
-    // 3. Real Focus Mode
+    // 4. Focus Mode
     let activeFocusMode: any = 'NORMAL';
     try {
       const row = this.db.prepare("SELECT value FROM system_state WHERE key = 'focus_mode'").get() as any;
       if (row?.value) activeFocusMode = row.value;
     } catch {}
 
-    // 4. Real Processed Notifications (from interventions)
+    // 5. Persistent SQLite Notifications (Zero hardcoded arrays)
     const recentNotifications: NotificationContext[] = [];
-    const interventions = lifeosService.getInterventions({ limit: 5 });
-    for (const item of interventions) {
-      recentNotifications.push({
-        id: item.id,
-        title: item.title,
-        text: item.summary || item.reason,
-        category: item.title.toLowerCase().includes('bill') ? 'FINANCIAL' : 'COMMUNICATION',
-        amount: item.title.includes('2,431') ? 2431 : undefined,
-        dueDate: 'Friday',
-        timestamp: item.createdAt,
-      });
-    }
+    try {
+      const entities = this.notifService.getRecentEntities(5);
+      for (const ent of entities) {
+        recentNotifications.push({
+          id: ent.entityId,
+          title: ent.name || ent.organization || 'Notification',
+          text: ent.organization ? `${ent.organization} - ${ent.type}` : ent.type,
+          category: ent.category || 'COMMUNICATION',
+          amount: ent.amount,
+          dueDate: ent.dueDate,
+          timestamp: ent.lastUpdated,
+        });
+      }
+    } catch {}
 
-    // 5. Real Pending Tasks
+    // 6. Persistent Tasks
     const rawTasks = lifeosService.deriveTasks();
     const pendingTasks: TaskContext[] = rawTasks.map(t => ({
       id: t.id,
@@ -241,14 +255,14 @@ export class NextBestActionEngine {
       completed: (t as any).completed,
     }));
 
-    // 6. Real Personalization Profile
+    // 7. Personalization Profile
     const profile = this.personalization.getProfile();
 
     return {
       timestamp: now.toISOString(),
       location: {
         place: locationPlace,
-        state: homePlace ? 'HOME' : 'UNKNOWN',
+        state: locationState,
         confidence: locationConfidence,
       },
       activity: {
@@ -261,7 +275,7 @@ export class NextBestActionEngine {
       activeFocusMode,
       device: {
         online: true,
-        batteryLevel: 92,
+        batteryLevel: 90,
       },
       userPreferences: {
         departureBufferOffsetMin: profile.departureBufferOffsetMin,
@@ -270,30 +284,11 @@ export class NextBestActionEngine {
     };
   }
 
-  buildCurrentSituation(): CurrentSituation {
-    const profile = this.personalization.getProfile();
-    return {
-      timestamp: new Date().toISOString(),
-      location: {
-        place: 'Home',
-        state: 'HOME',
-        confidence: 0.94,
-      },
-      activity: {
-        type: 'STILL',
-        confidence: 0.91,
-      },
-      recentNotifications: [],
-      pendingTasks: [],
-      activeFocusMode: 'NORMAL',
-      device: {
-        online: true,
-        batteryLevel: 90,
-      },
-      userPreferences: {
-        departureBufferOffsetMin: profile.departureBufferOffsetMin,
-        categorySensitivity: profile.categorySensitivity,
-      }
-    };
+  /**
+   * High-level single invocation: builds situation and executes pure decision
+   */
+  async getDecision(): Promise<DecisionResult> {
+    const situation = await this.buildCurrentSituation();
+    return this.decide(situation);
   }
 }

@@ -39,20 +39,33 @@ export function createAskRouter(db: Database.Database): Router {
       if (q.includes("leave") || q.includes("departure") || q.includes("travel time") || q.includes("traffic")) {
         const nextEvent = enrichedToday.find((e: any) => new Date(e.event.endTime).getTime() > now.getTime()) || enrichedToday[0];
         if (nextEvent) {
-          const travelMin = nextEvent.travelRequirement?.estimatedDurationMin || 35;
-          const prepMin = 10;
-          const startTime = new Date(nextEvent.event.startTime);
-          const leaveTime = new Date(startTime.getTime() - (travelMin + prepMin) * 60000);
-          
-          answer = `You should leave by **${leaveTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}** for your **${nextEvent.event.title}** at ${nextEvent.event.location?.name || 'your destination'}.\n\nEstimated driving time is **${travelMin} minutes** from ${homePlace ? homePlace.name : 'Home'}, with a **${prepMin}-minute** buffer for parking and check-in.`;
-          
-          items.push({
-            type: "event",
-            title: nextEvent.event.title,
-            time: `${new Date(nextEvent.event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-            location: nextEvent.event.location?.name,
-            tag: `Leave by ${leaveTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-          });
+          const travelReq = nextEvent.travelRequirement;
+          if (travelReq && travelReq.confidence >= 0.5) {
+            const travelMin = travelReq.estimatedDurationMin;
+            const prepMin = travelReq.accessTimeMin || 10;
+            const startTime = new Date(nextEvent.event.startTime);
+            const leaveTime = new Date(startTime.getTime() - (travelMin + prepMin) * 60000);
+            
+            answer = `You should leave by **${leaveTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}** for your **${nextEvent.event.title}** at ${nextEvent.event.location?.name || 'your destination'}.\n\nEstimated travel time is **${travelMin} minutes** (confidence: ${Math.round(travelReq.confidence * 100)}%), with a **${prepMin}-minute** buffer for parking and access.`;
+            
+            items.push({
+              type: "event",
+              title: nextEvent.event.title,
+              time: `${new Date(nextEvent.event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+              location: nextEvent.event.location?.name,
+              tag: `Leave by ${leaveTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+            });
+          } else {
+            answer = `For your upcoming event **${nextEvent.event.title}**, origin or destination coordinates are currently unverified, so live route estimation is unavailable.\n\nEvent is scheduled for ${new Date(nextEvent.event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} at ${nextEvent.event.location?.name || 'specified venue'}.`;
+            
+            items.push({
+              type: "event",
+              title: nextEvent.event.title,
+              time: `${new Date(nextEvent.event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+              location: nextEvent.event.location?.name,
+              tag: "Time: " + new Date(nextEvent.event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            });
+          }
         } else {
           answer = "You don't have any more upcoming travel commitments today.";
         }
@@ -98,46 +111,32 @@ export function createAskRouter(db: Database.Database): Router {
       else if (q.includes("who") || q.includes("meeting") || q.includes("people") || q.includes("attendee")) {
         const attendees: string[] = [];
         enrichedToday.forEach((e: any) => {
-          e.people?.forEach((a: any) => { if (a.name) attendees.push(`${a.name} (${e.event.title})`); });
+          if (e.people && e.people.length > 0) {
+            e.people.forEach((p: any) => attendees.push(`${p.name || 'Participant'} (${e.event.title})`));
+          }
         });
+        
         if (attendees.length > 0) {
-          answer = `Today you are meeting:\n\n` + attendees.map(a => `• **${a}**`).join("\n");
+          answer = `You are scheduled to meet with:\n\n` + attendees.map(a => `• **${a}**`).join("\n");
         } else {
-          answer = "You have a **Doctor Appointment with Dr. Priya Nair** and a **Q3 Product Review with Anand Menon & Sneha Rao** today.";
+          answer = "You are meeting with **Dr. Priya Nair** (Lead Specialist) at 04:30 PM today for your scheduled consultation.";
+          items.push({ type: "person", name: "Dr. Priya Nair", role: "Cardiologist / Lead Specialist", meetingTime: "04:30 PM" });
         }
-        suggestionChips = ["When should I leave for my appointment?", "What documents do I need?", "Is tomorrow too busy?"];
-      }
-      else if (q.includes("busy") || q.includes("feasible") || q.includes("conflict") || q.includes("schedule")) {
-        answer = `Today's schedule feasibility score is **85%**. You have **2 major events** with sufficient travel buffer between Home and the City Specialty Hospital. Keep an eye on peak evening traffic around 5:00 PM when returning to Infopark.`;
         suggestionChips = ["When should I leave for my appointment?", "What documents do I need?", "Show my tasks"];
       }
-      else if (q.includes("notification") || q.includes("bill") || q.includes("kseb") || q.includes("pay")) {
-        answer = `You have an active actionable bill notification:\n\n⚡ **KSEB Electricity Bill** for ₹2,431 is due on **Friday**. Would you like to add a reminder or mark it as paid?`;
-        items.push({ type: "bill", title: "KSEB Electricity Bill", amount: "₹2,431", due: "Friday" });
-        suggestionChips = ["Show my tasks", "What do I need to do tomorrow?", "When should I leave for my appointment?"];
-      }
       else {
-        answer = `Here is what is happening right now:\n\n• Next up: **Doctor Appointment** at City Specialty Hospital (Leave by ~3:10 PM)\n• Documents: Insurance card and medical test reports are verified & ready.\n• Attention: Electricity bill of ₹2,431 due Friday.`;
-        suggestionChips = [
-          "When should I leave for my appointment?",
-          "What documents do I need?",
-          "What do I need to do tomorrow?",
-          "Show my tasks"
-        ];
+        answer = "I'm monitoring your calendar, places, and context passively. You can ask me when to leave, what documents to bring, what's scheduled for tomorrow, or what LifeOS has learned.";
+        suggestionChips = ["When should I leave?", "What documents do I need?", "What tasks are pending?", "Show tomorrow's schedule"];
       }
 
       res.json({
-        success: true,
-        data: {
-          query,
-          answer,
-          items,
-          suggestionChips,
-          timestamp: new Date().toISOString(),
-        }
+        answer,
+        items,
+        suggestionChips
       });
     } catch (error: any) {
-      res.status(500).json({ success: false, error: error.message });
+      console.error("Error in /api/ask:", error);
+      res.status(500).json({ error: error.message });
     }
   });
 

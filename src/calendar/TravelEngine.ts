@@ -6,11 +6,82 @@ import {
 import { PlaceResolver } from './PlaceResolver.js';
 import Database from 'better-sqlite3';
 
+export interface RouteResult {
+  distanceKm: number;
+  durationMinutes: number;
+  trafficDelayMinutes?: number;
+  confidence: number;
+  provider: 'ONLINE_MAPS' | 'LOCAL_ROUTER' | 'ESTIMATED_OFFLINE' | 'UNAVAILABLE';
+  fetchedAt: string;
+}
+
+export interface RoutingProvider {
+  getRoute(
+    origin: { latitude: number; longitude: number },
+    destination: { latitude: number; longitude: number },
+    mode?: TransportMode
+  ): Promise<RouteResult>;
+}
+
+export class OfflineRoutingProvider implements RoutingProvider {
+  async getRoute(
+    origin: { latitude: number; longitude: number },
+    destination: { latitude: number; longitude: number },
+    mode: TransportMode = TransportMode.CAR
+  ): Promise<RouteResult> {
+    const distanceKm = this.calculateDistanceKm(
+      origin.latitude, 
+      origin.longitude, 
+      destination.latitude, 
+      destination.longitude
+    );
+
+    const speeds: Record<TransportMode, number> = {
+      [TransportMode.WALK]: 4.5,
+      [TransportMode.BIKE]: 15,
+      [TransportMode.CAR]: 28, // Realistic city average
+      [TransportMode.BUS]: 18,
+      [TransportMode.TRAIN]: 35,
+      [TransportMode.FLIGHT]: 600,
+      [TransportMode.UNKNOWN]: 25
+    };
+
+    const speed = speeds[mode] || 25;
+    const durationMinutes = Math.max(1, Math.round((distanceKm / speed) * 60));
+
+    return {
+      distanceKm,
+      durationMinutes,
+      trafficDelayMinutes: 0,
+      confidence: 0.88,
+      provider: 'LOCAL_ROUTER',
+      fetchedAt: new Date().toISOString()
+    };
+  }
+
+  private calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return Math.round(R * c * 10) / 10;
+  }
+}
+
 export class TravelEngine {
+  private routingProvider: RoutingProvider;
+
   constructor(
     private db: Database.Database,
-    private placeResolver: PlaceResolver
-  ) {}
+    private placeResolver: PlaceResolver,
+    routingProvider?: RoutingProvider
+  ) {
+    this.routingProvider = routingProvider || new OfflineRoutingProvider();
+  }
   
   async calculateTravelRequirement(
     originOverride: ResolvedPlace | undefined,
@@ -22,17 +93,38 @@ export class TravelEngine {
     
     const origin = originOverride || await this.inferOrigin(departureTime);
     
-    const distanceKm = origin 
-      ? this.calculateDistanceKm(origin.latitude, origin.longitude, destination.latitude, destination.longitude)
-      : 10;
+    // Check if valid coordinates exist on both ends
+    const hasValidCoords = origin && 
+      origin.latitude !== undefined && origin.longitude !== undefined &&
+      destination.latitude !== undefined && destination.longitude !== undefined &&
+      (origin.latitude !== 0 || origin.longitude !== 0) &&
+      (destination.latitude !== 0 || destination.longitude !== 0);
+
+    let route: RouteResult;
+
+    if (hasValidCoords && origin) {
+      const mode = preferredMode || this.inferTravelMode(10, destination.placeType);
+      route = await this.routingProvider.getRoute(
+        { latitude: origin.latitude, longitude: origin.longitude },
+        { latitude: destination.latitude, longitude: destination.longitude },
+        mode
+      );
+    } else {
+      // Traceable Low Confidence Estimate: No coordinates available
+      route = {
+        distanceKm: 0,
+        durationMinutes: 20,
+        confidence: 0.35, // Explicit low confidence
+        provider: 'ESTIMATED_OFFLINE',
+        fetchedAt: new Date().toISOString()
+      };
+    }
     
-    const mode = preferredMode || this.inferTravelMode(distanceKm, destination.placeType);
-    const estimatedDurationMin = this.estimateDurationMin(distanceKm, mode);
-    
+    const mode = preferredMode || this.inferTravelMode(route.distanceKm, destination.placeType);
     const destProfile = this.placeResolver.getPreparationProfile(destination.placeType);
     const accessTimeMin = destProfile?.accessTimeMin || 5;
     const bufferMin = destProfile?.arrivalBufferMin || 10;
-    const requiredDurationMin = estimatedDurationMin + accessTimeMin + bufferMin;
+    const requiredDurationMin = route.durationMinutes + accessTimeMin + bufferMin;
     
     const arrivalTime = new Date(departureTime);
     const requiredDepartureTime = new Date(arrivalTime.getTime() - requiredDurationMin * 60 * 1000);
@@ -42,14 +134,14 @@ export class TravelEngine {
       origin: origin || undefined,
       destination,
       mode,
-      modeConfidence: 0.9,
-      distanceKm,
-      estimatedDurationMin,
+      modeConfidence: route.confidence,
+      distanceKm: route.distanceKm,
+      estimatedDurationMin: route.durationMinutes,
       bufferMin,
       accessTimeMin,
       requiredDurationMin,
       requiredDepartureTime: requiredDepartureTime.toISOString(),
-      confidence: 0.88
+      confidence: route.confidence
     };
   }
 
@@ -102,36 +194,10 @@ export class TravelEngine {
     }
   }
   
-  private calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * (Math.PI / 180);
-    const dLon = (lon2 - lon1) * (Math.PI / 180);
-    const a = 
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return Math.round(R * c * 10) / 10;
-  }
-  
   private inferTravelMode(distanceKm: number, _placeType?: string): TransportMode {
-    if (distanceKm < 1.0) return TransportMode.WALK;
-    if (distanceKm < 3.0) return TransportMode.BIKE;
+    if (distanceKm < 1.0 && distanceKm > 0) return TransportMode.WALK;
+    if (distanceKm < 3.0 && distanceKm > 0) return TransportMode.BIKE;
     if (distanceKm > 200) return TransportMode.FLIGHT;
     return TransportMode.CAR;
-  }
-  
-  private estimateDurationMin(distanceKm: number, mode: TransportMode): number {
-    const speeds: Record<TransportMode, number> = {
-      [TransportMode.WALK]: 5,
-      [TransportMode.BIKE]: 15,
-      [TransportMode.CAR]: 30,
-      [TransportMode.BUS]: 20,
-      [TransportMode.TRAIN]: 40,
-      [TransportMode.FLIGHT]: 600,
-      [TransportMode.UNKNOWN]: 30
-    };
-    const speed = speeds[mode] || 30;
-    return Math.round((distanceKm / speed) * 60);
   }
 }

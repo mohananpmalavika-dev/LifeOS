@@ -43,13 +43,21 @@ export class CandidateGenerator {
         else if (minutesUntilLeave <= 45) urgency = 0.75;
 
         const importance = 0.92;
+        const locConf = typeof situation.location.confidence === 'number' ? situation.location.confidence : 0.50;
+        const overallConf = Number((
+          0.98 * 0.35 +
+          locConf * 0.35 +
+          0.85 * 0.15 +
+          0.80 * 0.15
+        ).toFixed(2));
+
         const confidenceBreakdown: ConfidenceBreakdown = {
           calendar: 0.98,
-          location: situation.location.confidence || 0.90,
+          location: locConf,
           travel: 0.85,
           preparation: 0.80,
           userPattern: 0.75,
-          overall: 0.88,
+          overall: overallConf,
         };
 
         const leaveByTime = new Date(eventStart.getTime() - totalLeadTimeMin * 60000);
