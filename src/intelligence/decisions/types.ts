@@ -1,3 +1,13 @@
+
+export interface ContextObservation<T> {
+  value: T;
+  source: 'ANDROID_SENSOR' | 'GPS' | 'CALENDAR' | 'NOTIFICATION' | 'DATABASE' | 'USER' | 'INFERENCE';
+  confidence: number;
+  observedAt: string;
+  ageSeconds?: number;
+  ttlSeconds?: number;
+  isStale?: boolean;
+}
 export type CandidateType = 
   | 'LEAVE'
   | 'PREPARE'
@@ -126,6 +136,8 @@ export interface CurrentSituation {
 }
 
 export interface DecisionResult {
+  decisionId: string;
+  traceId: string;
   situation: CurrentSituation;
   bestAction: ActionCandidate;
   candidates: ActionCandidate[];

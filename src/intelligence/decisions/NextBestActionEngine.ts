@@ -18,6 +18,8 @@ import { LocationStorage } from '../location/storage/LocationStorage.js';
 import { NotificationIntelligenceService } from '../../api/services/notification-intelligence-service.js';
 import { lifeosService } from '../../api/services/lifeos-service.js';
 
+import { DeviceStateManager } from '../device/DeviceStateManager.js';
+
 export class NextBestActionEngine {
   private candidateGenerator: CandidateGenerator;
   private policy: InterventionPolicy;
@@ -27,6 +29,7 @@ export class NextBestActionEngine {
   private placeResolver: PlaceResolver;
   private locationStorage: LocationStorage;
   private notifService: NotificationIntelligenceService;
+  private deviceManager: DeviceStateManager;
 
   constructor(private db: Database.Database) {
     this.candidateGenerator = new CandidateGenerator();
@@ -37,6 +40,7 @@ export class NextBestActionEngine {
     this.documentEngine = new DocumentEngine(db, new EventClassifier());
     this.locationStorage = new LocationStorage(db);
     this.notifService = new NotificationIntelligenceService(db);
+    this.deviceManager = new DeviceStateManager(db);
     this.initializeTables();
   }
 
@@ -77,7 +81,12 @@ export class NextBestActionEngine {
       `).run(decisionId, JSON.stringify(situation), JSON.stringify(bestAction), surface, bestAction.score);
     } catch {}
 
+    const decisionId = `dec_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    const traceId = `trace_ctx_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+
     return {
+      decisionId,
+      traceId,
       situation,
       bestAction,
       candidates,
@@ -258,6 +267,21 @@ export class NextBestActionEngine {
     // 7. Personalization Profile
     const profile = this.personalization.getProfile();
 
+    // 6. Real Device State from SQLite
+    let deviceOnline = true;
+    let deviceBattery = 85;
+    try {
+      const devRow = this.db.prepare(`
+        SELECT battery_level, is_online, observed_at FROM device_state 
+        ORDER BY observed_at DESC LIMIT 1
+      `).get() as any;
+
+      if (devRow) {
+        deviceBattery = devRow.battery_level;
+        deviceOnline = Boolean(devRow.is_online);
+      }
+    } catch {}
+
     return {
       timestamp: now.toISOString(),
       location: {
@@ -274,8 +298,8 @@ export class NextBestActionEngine {
       pendingTasks,
       activeFocusMode,
       device: {
-        online: true,
-        batteryLevel: 90,
+        online: deviceOnline,
+        batteryLevel: deviceBattery,
       },
       userPreferences: {
         departureBufferOffsetMin: profile.departureBufferOffsetMin,

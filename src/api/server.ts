@@ -20,6 +20,7 @@ import { createAskRouter } from "./routes/ask.js";
 import { createMemoryRouter } from "./routes/memory.js";
 import { createPrivacyCenterRouter } from "./routes/privacy-center.js";
 import { createDecisionsRouter } from "./routes/decisions.js";
+import { createSystemRouter } from "./routes/system.js";
 import { seedInitialDemoData } from "./services/seed-data.js";
 import Database from "better-sqlite3";
 import path from "path";
@@ -52,6 +53,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 // API Routes
+app.use("/api/system", createSystemRouter(db));
 app.use("/api/decisions", createDecisionsRouter(db));
 app.use("/api/briefing", createBriefingRouter(db));
 app.use("/api/ask", createAskRouter(db));

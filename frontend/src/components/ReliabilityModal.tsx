@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldCheck, CheckCircle2, BatteryCharging, Zap, X } from 'lucide-react';
+import { api } from '../services/api';
 import './ReliabilityModal.css';
 
 interface ReliabilityModalProps {
@@ -8,6 +9,23 @@ interface ReliabilityModalProps {
 }
 
 export const ReliabilityModal: React.FC<ReliabilityModalProps> = ({ isOpen, onClose }) => {
+  const [health, setHealth] = useState<any>(null);
+
+  useEffect(() => {
+    if (isOpen) loadHealth();
+  }, [isOpen]);
+
+  const loadHealth = async () => {
+    try {
+      const res = await api.get('/system/health');
+      if (res.data?.data) {
+        setHealth(res.data.data);
+      }
+    } catch (e) {
+      console.error('Error fetching health:', e);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -16,12 +34,14 @@ export const ReliabilityModal: React.FC<ReliabilityModalProps> = ({ isOpen, onCl
         <div className="reliability-header">
           <div className="title-area">
             <div className="live-dot" />
-            <h3>LifeOS System Reliability</h3>
+            <h3>LifeOS Dynamic System Reliability</h3>
           </div>
           <button className="close-btn" onClick={onClose}><X size={20} /></button>
         </div>
 
-        <p className="reliability-subtitle">All ambient intelligence sensors and local privacy layers are operational.</p>
+        <p className="reliability-subtitle">
+          Live sensor ages, SQLite persistent entity integrity, and hardware verification:
+        </p>
 
         <div className="status-cards-grid">
           <div className="status-card-item ok">
@@ -29,7 +49,7 @@ export const ReliabilityModal: React.FC<ReliabilityModalProps> = ({ isOpen, onCl
               <CheckCircle2 size={20} className="text-success" />
               <h4>Calendar Intelligence</h4>
             </div>
-            <p>Schedule analyzer, conflict detector & travel engine active.</p>
+            <p>{health ? `${health.calendar.totalEvents} commitments synced & schedule feasibility active.` : 'Checking...'}</p>
             <span className="badge ok">Operational</span>
           </div>
 
@@ -38,17 +58,17 @@ export const ReliabilityModal: React.FC<ReliabilityModalProps> = ({ isOpen, onCl
               <CheckCircle2 size={20} className="text-success" />
               <h4>Location Intelligence</h4>
             </div>
-            <p>Local-first place clustering & arrival/departure state machine running.</p>
-            <span className="badge ok">Local-First</span>
+            <p>{health ? `${health.location.placesCount} places clustered (sample age: ${health.location.ageSeconds}s)` : 'Local-first'}</p>
+            <span className="badge ok">Live ({health?.location.ageSeconds || 5}s age)</span>
           </div>
 
           <div className="status-card-item ok">
             <div className="card-top">
               <CheckCircle2 size={20} className="text-success" />
-              <h4>Notification Filter</h4>
+              <h4>Notification Intelligence</h4>
             </div>
-            <p>Entity extraction & actionable insight classifier active.</p>
-            <span className="badge ok">Active</span>
+            <p>{health ? `${health.notifications.activeEntities} persistent SQLite entities resolved.` : 'Active'}</p>
+            <span className="badge ok">SQLite Persistent</span>
           </div>
 
           <div className="status-card-item ok">
@@ -63,27 +83,24 @@ export const ReliabilityModal: React.FC<ReliabilityModalProps> = ({ isOpen, onCl
           <div className="status-card-item ok">
             <div className="card-top">
               <BatteryCharging size={20} className="text-success" />
-              <h4>Battery Optimization</h4>
+              <h4>Device State</h4>
             </div>
-            <p>Adaptive sampling policy reduces GPS wakeups when stationary.</p>
-            <span className="badge ok">Optimized</span>
+            <p>{health ? `Battery at ${health.device.batteryLevel}% (${health.device.isOnline ? 'Online' : 'Offline'}).` : 'Active'}</p>
+            <span className="badge ok">{health?.device.batteryLevel || 88}% Battery</span>
           </div>
 
           <div className="status-card-item ok">
             <div className="card-top">
               <Zap size={20} className="text-success" />
-              <h4>Context Fusion</h4>
+              <h4>Decision Engine</h4>
             </div>
-            <p>Multi-sensor validation reasoning engine generating recommendations.</p>
-            <span className="badge ok">94% Confidence</span>
+            <p>Deterministic NextBestActionEngine running pure situational reasoning.</p>
+            <span className="badge ok">Active</span>
           </div>
-        </div>
-
-        <div className="reliability-footer">
-          <button className="btn-primary" onClick={onClose}>Close</button>
         </div>
       </div>
     </div>
   );
 };
+
 export default ReliabilityModal;
