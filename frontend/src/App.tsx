@@ -12,6 +12,7 @@ import Places from './pages/Places';
 import Documents from './pages/Documents';
 import Privacy from './pages/Privacy';
 import Settings from './pages/Settings';
+import DecisionDebugger from './pages/DecisionDebugger';
 import Insights from './pages/Insights';
 import ContextGraph from './pages/ContextGraph';
 import Interventions from './pages/Interventions';
@@ -34,6 +35,7 @@ function App() {
           <Route path="/documents" element={<Documents />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/decision-debugger" element={<DecisionDebugger />} />
           <Route path="/insights" element={<Insights />} />
           <Route path="/context" element={<ContextGraph />} />
           <Route path="/interventions" element={<Interventions />} />

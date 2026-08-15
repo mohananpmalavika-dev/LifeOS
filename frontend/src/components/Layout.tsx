@@ -83,6 +83,7 @@ export function Layout({ children }: LayoutProps) {
     { path: '/notification-intelligence', label: 'Notification Engine', icon: <Bell size={17} /> },
     { path: '/location', label: 'Location & Places', icon: <Navigation size={17} /> },
     { path: '/interventions', label: 'Interventions & Surfaces', icon: <Cpu size={17} /> },
+    { path: '/decision-debugger', label: 'Decision Debugger', icon: <Cpu size={17} /> },
   ];
 
   return (

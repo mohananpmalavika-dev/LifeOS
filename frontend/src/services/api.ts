@@ -273,3 +273,68 @@ export const timelineApi = {
 
 export { api };
 export default api;
+
+export interface ActionCandidateData {
+  id: string;
+  type: string;
+  title: string;
+  summary: string;
+  urgency: number;
+  importance: number;
+  confidence: number;
+  score: number;
+  confidenceBreakdown: {
+    calendar: number;
+    location: number;
+    travel: number;
+    preparation: number;
+    userPattern: number;
+    overall: number;
+  };
+  timing?: {
+    recommendedAt?: string;
+    deadline?: string;
+    travelMinutes?: number;
+    prepMinutes?: number;
+    bufferMinutes?: number;
+  };
+  evidence: Array<{
+    source: string;
+    title: string;
+    detail: string;
+    confidence: number;
+  }>;
+  actionSurfaces: Array<{
+    type: string;
+    label: string;
+    intent?: string;
+  }>;
+}
+
+export interface DecisionPayload {
+  situation: {
+    timestamp: string;
+    location: { place?: string; state: string; confidence: number };
+    activity: { type: string; confidence: number };
+    nextEvent?: any;
+    recentNotifications: any[];
+    activeFocusMode: string;
+    device: { online: boolean; batteryLevel: number };
+  };
+  bestAction: ActionCandidateData;
+  candidates: ActionCandidateData[];
+  surface: 'PUSH_NOTIFICATION' | 'HOME_CARD' | 'DAILY_BRIEFING' | 'SILENT';
+  explanation: {
+    headline: string;
+    narrative: string;
+    evidenceList: Array<{ source: string; title: string; detail: string; confidence: number }>;
+  };
+  timestamp: string;
+}
+
+export const decisionsApi = {
+  getCurrent: () => api.get<{ success: boolean; data: DecisionPayload }>('/decisions/current'),
+  getDebugger: () => api.get<{ success: boolean; data: any }>('/decisions/debugger'),
+  feedback: (candidateId: string, action: string, useful?: boolean, reason?: string) =>
+    api.post('/decisions/feedback', { candidateId, action, useful, reason }),
+};
