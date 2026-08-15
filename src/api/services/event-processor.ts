@@ -4,6 +4,10 @@
  * Normalizes, deduplicates, and enriches incoming LifeEvents before storage.
  */
 
+import {
+  SourceType,
+  SensitivityLevel,
+} from '../../types/life-event.js';
 import type { 
   LifeEvent, 
   EventType,
@@ -58,7 +62,7 @@ export class EventNormalizer {
     // Ensure source exists
     if (!event.source) {
       event.source = {
-        type: 'ANDROID',
+        type: SourceType.ANDROID,
         collector: 'unknown',
       };
     }
@@ -66,7 +70,7 @@ export class EventNormalizer {
     // Ensure privacy metadata exists
     if (!event.privacy) {
       event.privacy = {
-        sensitivity: 'PRIVATE',
+        sensitivity: SensitivityLevel.PRIVATE,
       };
     }
 
@@ -341,16 +345,16 @@ export class EventEnricher {
     
     if (package_name.includes('whatsapp') || package_name.includes('telegram')) {
       event.metadata!.category = 'MESSAGING';
-      event.privacy.sensitivity = 'SENSITIVE';
+      event.privacy.sensitivity = SensitivityLevel.SENSITIVE;
     } else if (package_name.includes('gmail') || package_name.includes('email')) {
       event.metadata!.category = 'EMAIL';
-      event.privacy.sensitivity = 'PRIVATE';
+      event.privacy.sensitivity = SensitivityLevel.PRIVATE;
     } else if (package_name.includes('calendar')) {
       event.metadata!.category = 'CALENDAR';
-      event.privacy.sensitivity = 'PRIVATE';
+      event.privacy.sensitivity = SensitivityLevel.PRIVATE;
     } else if (package_name.includes('bank') || package_name.includes('payment')) {
       event.metadata!.category = 'FINANCIAL';
-      event.privacy.sensitivity = 'SENSITIVE';
+      event.privacy.sensitivity = SensitivityLevel.SENSITIVE;
     } else {
       event.metadata!.category = 'OTHER';
     }
@@ -358,7 +362,7 @@ export class EventEnricher {
     // Check for OTP
     if (data.text && /\b\d{4,6}\b/.test(data.text)) {
       event.metadata!.containsOTP = true;
-      event.privacy.sensitivity = 'CRITICAL';
+      event.privacy.sensitivity = SensitivityLevel.CRITICAL;
       event.privacy.localOnly = true;
     }
   }

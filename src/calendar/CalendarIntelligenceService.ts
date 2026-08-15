@@ -11,15 +11,15 @@ import {
   ScheduleFeasibility,
   ImportanceScore,
   FlexibilityScore
-} from './types';
-import { EventClassifier } from './EventClassifier';
-import { PersonResolver } from './PersonResolver';
-import { PlaceResolver } from './PlaceResolver';
-import { TravelEngine } from './TravelEngine';
-import { ConflictEngine } from './ConflictEngine';
-import { PreparationEngine } from './PreparationEngine';
-import { DocumentEngine } from './DocumentEngine';
-import { ScheduleAnalyzer } from './ScheduleAnalyzer';
+} from './types.js';
+import { EventClassifier } from './EventClassifier.js';
+import { PersonResolver } from './PersonResolver.js';
+import { PlaceResolver } from './PlaceResolver.js';
+import { TravelEngine } from './TravelEngine.js';
+import { ConflictEngine } from './ConflictEngine.js';
+import { PreparationEngine } from './PreparationEngine.js';
+import { DocumentEngine } from './DocumentEngine.js';
+import { ScheduleAnalyzer } from './ScheduleAnalyzer.js';
 
 export class CalendarIntelligenceService {
   private eventClassifier: EventClassifier;

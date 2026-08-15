@@ -14,7 +14,7 @@ import {
   MovementType,
   LocationConfig,
   DEFAULT_LOCATION_CONFIG,
-} from './types';
+} from './types.js';
 
 export class LocationPolicyEngine {
   private config: LocationConfig;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { entitiesApi, type ContextEntity } from '../services/api';
-import { Users, Search, MessageCircle, Calendar, MapPin } from 'lucide-react';
+import { Users, Search, MessageCircle, Calendar } from 'lucide-react';
 import './People.css';
 
 function People() {

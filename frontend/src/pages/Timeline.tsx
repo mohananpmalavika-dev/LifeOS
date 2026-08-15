@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { timelineApi, type TimelineEvent } from '../services/api';
-import { Clock, MapPin, Bell, Calendar, Filter } from 'lucide-react';
+import { Clock, MapPin, Bell, Calendar } from 'lucide-react';
 import './Timeline.css';
 
 function Timeline() {

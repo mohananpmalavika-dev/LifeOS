@@ -18,8 +18,8 @@ import {
   LearnedPlace,
   LocationConfig,
   DEFAULT_LOCATION_CONFIG,
-} from '../types';
-import { LocationCollector } from '../collectors/LocationCollector';
+} from '../types.js';
+import { LocationCollector } from '../collectors/LocationCollector.js';
 
 export interface CalendarDestination {
   placeId?: string;

@@ -14,7 +14,7 @@ import {
   RoutinePattern,
   LocationContext,
   PrivacyMode,
-} from '../types';
+} from '../types.js';
 
 export class LocationStorage {
   private db: Database;

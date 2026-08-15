@@ -6,9 +6,9 @@
 
 import { Router, Request, Response } from 'express';
 import { Database } from 'better-sqlite3';
-import { LocationContextEngine } from '../../intelligence/location/LocationContextEngine';
-import { LocationStorage } from '../../intelligence/location/storage/LocationStorage';
-import { PlaceType, PrivacyMode } from '../../intelligence/location/types';
+import { LocationContextEngine } from '../../intelligence/location/LocationContextEngine.js';
+import { LocationStorage } from '../../intelligence/location/storage/LocationStorage.js';
+import { PlaceType, PrivacyMode } from '../../intelligence/location/types.js';
 
 export function createLocationRouter(db: Database): Router {
   const router = Router();
@@ -116,14 +116,15 @@ export function createLocationRouter(db: Database): Router {
   router.get('/places/:placeId', (req: Request, res: Response) => {
     try {
       const { placeId } = req.params;
-      const place = storage.getPlace(placeId);
+      const id = placeId as string;
+      const place = storage.getPlace(id);
       
       if (!place) {
         return res.status(404).json({ error: 'Place not found' });
       }
       
       // Get recent visits
-      const visits = storage.getPlaceVisits(placeId, 50);
+      const visits = storage.getPlaceVisits(id, 50);
       
       res.json({
         place: {
@@ -153,26 +154,27 @@ export function createLocationRouter(db: Database): Router {
   router.put('/places/:placeId', (req: Request, res: Response) => {
     try {
       const { placeId } = req.params;
+      const id = placeId as string;
       const { name, type, isPrivate } = req.body;
       
-      const place = storage.getPlace(placeId);
+      const place = storage.getPlace(id);
       if (!place) {
         return res.status(404).json({ error: 'Place not found' });
       }
       
       // Update place
       if (name !== undefined) {
-        locationEngine.setPlaceName(placeId, name);
+        locationEngine.setPlaceName(id, name);
         place.name = name;
       }
       
       if (type !== undefined) {
-        locationEngine.setPlaceType(placeId, type as PlaceType);
+        locationEngine.setPlaceType(id, type as PlaceType);
         place.semanticType = type as PlaceType;
       }
       
       if (isPrivate !== undefined) {
-        locationEngine.getPlaceEngine().setPlacePrivacy(placeId, isPrivate);
+        locationEngine.getPlaceEngine().setPlacePrivacy(id, isPrivate);
         place.isPrivate = isPrivate;
       }
       

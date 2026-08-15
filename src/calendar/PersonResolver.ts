@@ -4,7 +4,7 @@
  * Resolves calendar attendees to known person entities with confidence scoring
  */
 
-import { PersonReference, ResolvedPerson } from './types';
+import { PersonReference, ResolvedPerson } from './types.js';
 import Database from 'better-sqlite3';
 
 interface PersonEntity {

@@ -8,8 +8,8 @@ import {
   EnrichedCalendarEvent, 
   DocumentRequirement, 
   EventType 
-} from './types';
-import { EventClassifier } from './EventClassifier';
+} from './types.js';
+import { EventClassifier } from './EventClassifier.js';
 import Database from 'better-sqlite3';
 
 interface StoredDocument {

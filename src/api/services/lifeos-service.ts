@@ -62,6 +62,26 @@ class LifeOSService {
   }
 
   /**
+   * Process a notification event from NotificationIntelligenceService
+   */
+  async processNotificationEvent(event: any) {
+    const normalized: NormalizedEvent = {
+      id: event.eventId || `evt_${Date.now()}`,
+      event: event.data?.text || event.data?.title || 'Notification',
+      source: 'notification',
+      timestamp: event.timestamp || new Date().toISOString(),
+      entities: [],
+      metadata: {
+        text: event.data?.text,
+        sender: event.data?.appName || event.data?.package,
+        ...event.metadata,
+      },
+      confidence: event.confidence || 0.9,
+    };
+    return await this.processEvent(normalized);
+  }
+
+  /**
    * Publish an event to the event bus
    */
   publishEvent(event: NormalizedEvent) {

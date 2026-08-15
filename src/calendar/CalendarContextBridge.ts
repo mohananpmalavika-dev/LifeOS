@@ -6,8 +6,8 @@
  */
 
 import Database from 'better-sqlite3';
-import { EnrichedCalendarEvent, LifeCalendarEvent } from './types';
-import { CalendarIntelligenceService } from './CalendarIntelligenceService';
+import { EnrichedCalendarEvent, LifeCalendarEvent } from './types.js';
+import { CalendarIntelligenceService } from './CalendarIntelligenceService.js';
 
 interface LifeEvent {
   event_id: string;

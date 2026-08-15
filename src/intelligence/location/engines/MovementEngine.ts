@@ -15,8 +15,8 @@ import {
   MovementState,
   GeoPosition,
   ActivitySignal,
-} from '../types';
-import { LocationCollector } from '../collectors/LocationCollector';
+} from '../types.js';
+import { LocationCollector } from '../collectors/LocationCollector.js';
 
 export interface MovementAnalysis {
   movementState: MovementState;

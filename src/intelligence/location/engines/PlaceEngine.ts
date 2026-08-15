@@ -20,8 +20,8 @@ import {
   DayDistribution,
   LocationConfig,
   DEFAULT_LOCATION_CONFIG,
-} from '../types';
-import { LocationCollector } from '../collectors/LocationCollector';
+} from '../types.js';
+import { LocationCollector } from '../collectors/LocationCollector.js';
 
 export class PlaceEngine {
   private config: LocationConfig;

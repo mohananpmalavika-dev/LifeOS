@@ -16,8 +16,8 @@ import {
   ConflictSeverity,
   ConflictResolution,
   ScheduleWindow
-} from './types';
-import { TravelEngine } from './TravelEngine';
+} from './types.js';
+import { TravelEngine } from './TravelEngine.js';
 
 export class ConflictEngine {
   constructor(private travelEngine: TravelEngine) {}

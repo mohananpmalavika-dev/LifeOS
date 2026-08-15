@@ -4,7 +4,7 @@
  * Resolves calendar locations to known place entities with confidence scoring
  */
 
-import { RawLocation, ResolvedPlace, PlacePreparationProfile } from './types';
+import { RawLocation, ResolvedPlace, PlacePreparationProfile } from './types.js';
 import Database from 'better-sqlite3';
 
 interface PlaceEntity {

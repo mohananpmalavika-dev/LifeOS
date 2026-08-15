@@ -4,7 +4,7 @@
  * Classifies calendar events into types and provides preparation profiles
  */
 
-import { EventType, EventTypeProfile, LifeCalendarEvent } from './types';
+import { EventType, EventTypeProfile, LifeCalendarEvent } from './types.js';
 
 /**
  * Event Type Preparation Profiles
@@ -226,7 +226,7 @@ export const EVENT_TYPE_PROFILES: Record<EventType, EventTypeProfile> = {
  * Classification patterns for event types
  */
 interface ClassificationPattern {
-  keywords: string[];
+  keywords?: string[];
   locationKeywords?: string[];
   weight: number;
 }
@@ -354,9 +354,9 @@ export class EventClassifier {
         maxWeight = Math.max(maxWeight, pattern.weight);
         
         // Check title and description keywords
-        const keywordMatch = pattern.keywords.some(keyword => 
-          text.toLowerCase().includes(keyword.toLowerCase())
-        );
+        const keywordMatch = pattern.keywords
+          ? pattern.keywords.some(keyword => text.toLowerCase().includes(keyword.toLowerCase()))
+          : false;
         
         if (keywordMatch) {
           score = Math.max(score, pattern.weight);

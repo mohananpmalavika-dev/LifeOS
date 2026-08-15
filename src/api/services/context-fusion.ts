@@ -10,6 +10,9 @@
  * v0.3: Enhanced with Location Intelligence integration
  */
 
+import {
+  ActivityType,
+} from '../../types/life-event.js';
 import type { 
   LifeEvent,
   EventType,
@@ -17,7 +20,6 @@ import type {
   LocationEventData,
   ActivityEventData,
   PlaceType,
-  ActivityType,
 } from '../../types/life-event.js';
 import type { LocationContext } from '../../intelligence/location/types.js';
 
@@ -201,7 +203,7 @@ export class ContextFusionEngine {
   ): FusedContext | null {
     const now = new Date();
     let contextType: LifeContextType = LifeContextType.UNKNOWN;
-    let description: string;
+    let description: string = '';
     const keySignals: string[] = [];
     const confidenceFactors: string[] = [];
     let confidence = locationContext.confidence;
@@ -523,7 +525,7 @@ export class ContextFusionEngine {
     const latestActivity = window.activity[window.activity.length - 1];
     const activityData = latestActivity.data as ActivityEventData;
     
-    const commuteActivities: ActivityType[] = ['DRIVING', 'IN_VEHICLE', 'WALKING'];
+    const commuteActivities: ActivityType[] = [ActivityType.DRIVING, ActivityType.IN_VEHICLE, ActivityType.WALKING];
     
     if (!commuteActivities.includes(activityData.activity)) {
       return null;

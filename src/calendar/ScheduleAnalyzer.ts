@@ -11,8 +11,8 @@ import {
   ScheduleConflict,
   ConflictSeverity,
   ScheduleWindow
-} from './types';
-import { ConflictEngine } from './ConflictEngine';
+} from './types.js';
+import { ConflictEngine } from './ConflictEngine.js';
 
 export class ScheduleAnalyzer {
   constructor(private conflictEngine: ConflictEngine) {}

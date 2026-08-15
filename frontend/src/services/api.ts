@@ -231,4 +231,5 @@ export const eventsApi = {
     api.post<{ success: boolean; message: string }>('/events/publish', event),
 };
 
+export { api };
 export default api;

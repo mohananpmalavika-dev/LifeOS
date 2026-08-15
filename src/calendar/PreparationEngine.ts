@@ -10,8 +10,8 @@ import {
   PreparationItem, 
   EventType,
   DocumentRequirement 
-} from './types';
-import { EventClassifier } from './EventClassifier';
+} from './types.js';
+import { EventClassifier } from './EventClassifier.js';
 import Database from 'better-sqlite3';
 
 export class PreparationEngine {

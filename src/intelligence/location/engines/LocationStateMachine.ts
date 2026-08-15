@@ -12,8 +12,8 @@ import {
   LocationConfig,
   DEFAULT_LOCATION_CONFIG,
   GeoPosition,
-} from '../types';
-import { LocationCollector } from '../collectors/LocationCollector';
+} from '../types.js';
+import { LocationCollector } from '../collectors/LocationCollector.js';
 
 export interface StateTransition {
   fromState: LocationState;

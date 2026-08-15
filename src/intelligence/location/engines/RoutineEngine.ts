@@ -14,7 +14,7 @@ import {
   TravelMode,
   LocationConfig,
   DEFAULT_LOCATION_CONFIG,
-} from '../types';
+} from '../types.js';
 
 export interface RoutinePrediction {
   pattern: RoutinePattern;

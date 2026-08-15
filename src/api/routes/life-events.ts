@@ -239,7 +239,7 @@ router.post('/events/batch', async (req, res) => {
     duplicateEvents.push(...batchResult.duplicates);
 
     // Track errors
-    failedEvents.push(...batchResult.errors);
+    failedEvents.push(...batchResult.errors.map((e: any) => ({ index: e.index, reason: e.reason || e.error || 'Unknown error' })));
 
     // Update sync stats
     const stats = syncStats.get(batch.deviceId) || {

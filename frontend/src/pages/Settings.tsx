@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings as SettingsIcon, Bell, Smartphone, Moon, Sliders, Save } from 'lucide-react';
+import { Bell, Smartphone, Moon, Sliders, Save } from 'lucide-react';
 import './Settings.css';
 
 function Settings() {

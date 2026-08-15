@@ -5,7 +5,7 @@
  * Uses device motion sensors to detect walking, running, driving, etc.
  */
 
-import { MovementType, ActivitySignal } from '../types';
+import { MovementType, ActivitySignal } from '../types.js';
 
 export interface ActivityReading {
   activity: MovementType;

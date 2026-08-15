@@ -291,8 +291,8 @@ const Location: React.FC = () => {
           {sortedPlaces.map(place => (
             <div 
               key={place.id} 
-              className={`place-card ${place.isPrivate ? 'private' : ''}`}
-              onClick={() => setSelectedPlace(place)}
+              className={`place-card ${place.isPrivate ? 'private' : ''} ${selectedPlace?.id === place.id ? 'active' : ''}`}
+              onClick={() => setSelectedPlace(selectedPlace?.id === place.id ? null : place)}
             >
               <div className="place-header">
                 <h4>{place.name || `Place ${place.id.slice(0, 8)}`}</h4>

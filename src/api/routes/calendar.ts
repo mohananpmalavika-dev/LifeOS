@@ -4,8 +4,8 @@
 
 import { Router, Request, Response } from 'express';
 import Database from 'better-sqlite3';
-import { CalendarIntelligenceService } from '../../calendar/CalendarIntelligenceService';
-import { LifeCalendarEvent } from '../../calendar/types';
+import { CalendarIntelligenceService } from '../../calendar/CalendarIntelligenceService.js';
+import { LifeCalendarEvent } from '../../calendar/types.js';
 
 export function createCalendarRoutes(db: Database.Database): Router {
   const router = Router();
@@ -53,7 +53,7 @@ export function createCalendarRoutes(db: Database.Database): Router {
     try {
       const { eventId } = req.params;
       
-      const enrichedEvent = await calendarService.getEnrichedEvent(eventId);
+      const enrichedEvent = await calendarService.getEnrichedEvent(eventId as string);
       
       if (!enrichedEvent) {
         return res.status(404).json({
@@ -82,7 +82,7 @@ export function createCalendarRoutes(db: Database.Database): Router {
     try {
       const { eventId } = req.params;
       
-      await calendarService.deleteEvent(eventId);
+      await calendarService.deleteEvent(eventId as string);
       
       res.json({
         success: true,
@@ -156,8 +156,8 @@ export function createCalendarRoutes(db: Database.Database): Router {
         conflicts: allConflicts,
         summary: {
           total: allConflicts.length,
-          byType: this.groupBy(allConflicts, 'type'),
-          bySeverity: this.groupBy(allConflicts, 'severity')
+          byType: groupBy(allConflicts, 'type'),
+          bySeverity: groupBy(allConflicts, 'severity')
         }
       });
     } catch (error) {
@@ -177,7 +177,7 @@ export function createCalendarRoutes(db: Database.Database): Router {
     try {
       const { date } = req.params;
       
-      const analysis = await calendarService.analyzeSchedule(date, date);
+      const analysis = await calendarService.analyzeSchedule(date as string, date as string);
       
       const dayAnalysis = analysis.dailyAnalysis[0];
       

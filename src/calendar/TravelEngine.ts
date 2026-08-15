@@ -4,8 +4,8 @@
  * Estimates travel time between locations with buffers, historical patterns, and mode inference
  */
 
-import { ResolvedPlace, TravelRequirement, TransportMode, TravelHistory, TravelObservation } from './types';
-import { PlaceResolver } from './PlaceResolver';
+import { ResolvedPlace, TravelRequirement, TransportMode, TravelHistory, TravelObservation } from './types.js';
+import { PlaceResolver } from './PlaceResolver.js';
 import Database from 'better-sqlite3';
 
 interface RouteEstimate {
@@ -24,14 +24,14 @@ export class TravelEngine {
    * Calculate travel requirement between two places
    */
   async calculateTravelRequirement(
-    origin: ResolvedPlace | undefined,
+    origin: ResolvedPlace | null | undefined,
     destination: ResolvedPlace,
     departureTime: string,
     userPreferredMode?: TransportMode
   ): Promise<TravelRequirement | null> {
     // If no origin, assume user needs to travel from current/home location
     if (!origin) {
-      origin = await this.inferOrigin(departureTime);
+      origin = (await this.inferOrigin(departureTime)) ?? undefined;
     }
     
     if (!origin) {

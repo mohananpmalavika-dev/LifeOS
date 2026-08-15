@@ -9,20 +9,21 @@ import {
   LocationContext,
   LocationEvent,
   LocationEventType,
+  LocationState,
   GeoPosition,
   LocationConfig,
   DEFAULT_LOCATION_CONFIG,
   MovementIntent,
   PlaceType,
-} from './types';
-import { LocationCollector } from './collectors/LocationCollector';
-import { ActivityCollector } from './collectors/ActivityCollector';
-import { PlaceEngine } from './engines/PlaceEngine';
-import { MovementEngine } from './engines/MovementEngine';
-import { LocationStateMachine } from './engines/LocationStateMachine';
-import { RoutineEngine } from './engines/RoutineEngine';
-import { DestinationEngine, CalendarDestination } from './engines/DestinationEngine';
-import { LocationPolicyEngine } from './LocationPolicyEngine';
+} from './types.js';
+import { LocationCollector } from './collectors/LocationCollector.js';
+import { ActivityCollector } from './collectors/ActivityCollector.js';
+import { PlaceEngine } from './engines/PlaceEngine.js';
+import { MovementEngine } from './engines/MovementEngine.js';
+import { LocationStateMachine } from './engines/LocationStateMachine.js';
+import { RoutineEngine } from './engines/RoutineEngine.js';
+import { DestinationEngine, CalendarDestination } from './engines/DestinationEngine.js';
+import { LocationPolicyEngine } from './LocationPolicyEngine.js';
 
 export interface LocationContextEngineOptions {
   config?: Partial<LocationConfig>;
@@ -169,9 +170,9 @@ export class LocationContextEngine {
       
       // Check if approaching destination
       if (destination && this.destinationEngine.isApproachingDestination(position, destination)) {
-        if (this.stateMachine.getCurrentState() !== 'APPROACHING_DESTINATION') {
+        if (this.stateMachine.getCurrentState() !== LocationState.APPROACHING_DESTINATION) {
           this.stateMachine.setState(
-            'APPROACHING_DESTINATION',
+            LocationState.APPROACHING_DESTINATION,
             'Approaching predicted destination',
             destinationCandidates[0].probability
           );

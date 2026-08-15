@@ -5,7 +5,7 @@
  * Does NOT continuously poll - controlled by LocationPolicyEngine.
  */
 
-import { GeoPosition, LocationSignal, PositionSignal } from '../types';
+import { GeoPosition, LocationSignal, PositionSignal } from '../types.js';
 
 export interface LocationCollectorConfig {
   accuracyMeters: number;
