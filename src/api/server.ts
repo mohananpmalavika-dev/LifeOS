@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
-import { interventionRoutes } from "./routes/interventions.js";
+import { createInterventionsRouter } from "./routes/interventions.js";
 import { timelineRoutes } from "./routes/timeline.js";
 import { contextRoutes } from "./routes/context.js";
 import { tasksRoutes } from "./routes/tasks.js";
@@ -55,8 +55,8 @@ app.use("/api/briefing", createBriefingRouter(db));
 app.use("/api/ask", createAskRouter(db));
 app.use("/api/memory", createMemoryRouter(db));
 app.use("/api/privacy-center", createPrivacyCenterRouter(db));
+app.use("/api/interventions", createInterventionsRouter(db));
 
-app.use("/api/interventions", interventionRoutes);
 app.use("/api/timeline", timelineRoutes);
 app.use("/api/context", contextRoutes);
 app.use("/api/tasks", tasksRoutes);
@@ -86,19 +86,11 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
   });
 });
 
-// 404 handler
-app.use((_req, res) => {
-  res.status(404).json({ 
-    error: "Route not found",
-    timestamp: new Date().toISOString(),
-  });
-});
-
-export function startServer() {
-  app.listen(PORT, () => {
-    console.log(`🚀 LifeOS API Server running on http://localhost:${PORT}`);
-    console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+export function startServer(port: number = Number(PORT)) {
+  return app.listen(port, () => {
+    console.log(`LifeOS API server running on port ${port}`);
   });
 }
 
-export default app;
+export { app, db };
+

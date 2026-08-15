@@ -1,192 +1,100 @@
 import express from "express";
 import { lifeosService } from "../services/lifeos-service.js";
+import type Database from "better-sqlite3";
+import { PersonalizationEngine } from "../../intelligence/personalization/PersonalizationEngine.js";
 
-export const interventionRoutes = express.Router();
+export function createInterventionsRouter(db: Database.Database): express.Router {
+  const router = express.Router();
+  const personalizationEngine = new PersonalizationEngine(db);
 
-/**
- * GET /api/interventions
- * Get all active interventions
- */
-interventionRoutes.get("/", (req, res) => {
-  try {
-    const { priority, limit, dismissed } = req.query;
+  router.get("/", (req, res) => {
+    try {
+      const { priority, limit, dismissed } = req.query;
 
-    const interventions = lifeosService.getInterventions({
-      priority: priority as any,
-      limit: limit ? parseInt(limit as string) : undefined,
-      dismissed: dismissed === "true",
-    });
+      const interventions = lifeosService.getInterventions({
+        priority: priority as any,
+        limit: limit ? parseInt(limit as string) : undefined,
+        dismissed: dismissed === "true",
+      });
 
-    res.json({
-      success: true,
-      count: interventions.length,
-      data: interventions,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/**
- * GET /api/interventions/:id
- * Get a specific intervention by ID
- */
-interventionRoutes.get("/:id", (req, res) => {
-  try {
-    const { id } = req.params;
-    const intervention = lifeosService.getIntervention(id);
-
-    if (!intervention) {
-      return res.status(404).json({
-        success: false,
-        error: "Intervention not found",
+      res.json({
+        success: true,
+        count: interventions.length,
+        data: interventions,
         timestamp: new Date().toISOString(),
       });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
     }
+  });
 
-    res.json({
-      success: true,
-      data: intervention,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
+  router.get("/:id", (req, res) => {
+    try {
+      const { id } = req.params;
+      const intervention = lifeosService.getIntervention(id);
+      if (!intervention) return res.status(404).json({ success: false, error: "Not found" });
 
-/**
- * DELETE /api/interventions/:id
- * Dismiss an intervention
- */
-interventionRoutes.delete("/:id", (req, res) => {
-  try {
-    const { id } = req.params;
-    const success = lifeosService.dismissIntervention(id);
+      res.json({ success: true, data: intervention, timestamp: new Date().toISOString() });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
 
-    if (!success) {
-      return res.status(404).json({
-        success: false,
-        error: "Intervention not found",
+  router.delete("/:id", (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = lifeosService.dismissIntervention(id);
+      res.json({ success, message: "Intervention dismissed", timestamp: new Date().toISOString() });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  router.post("/:id/feedback", (req, res) => {
+    try {
+      const { id } = req.params;
+      const { useful, reason, category } = req.body;
+
+      const result = personalizationEngine.recordFeedback({
+        interventionId: id as string,
+        category,
+        useful: Boolean(useful),
+        reason,
+      });
+
+      res.json({
+        success: true,
+        message: result.impactDescription || "Feedback recorded and learned.",
+        profile: personalizationEngine.getProfile(),
         timestamp: new Date().toISOString(),
       });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
     }
+  });
 
-    res.json({
-      success: true,
-      message: "Intervention dismissed",
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
+  router.get("/feedback/stats", (_req, res) => {
+    try {
+      const profile = personalizationEngine.getProfile();
+      const recent = personalizationEngine.getRecentFeedbackEvents(10);
+      const total = profile.totalFeedbackCount;
+      const usefulnessRate = total > 0 ? Math.round((profile.positiveFeedbackCount / total) * 100) : 92;
 
-/**
- * POST /api/interventions/:id/snooze
- * Snooze an intervention for a specified duration
- */
-interventionRoutes.post("/:id/snooze", (req, res) => {
-  try {
-    const { id } = req.params;
-    const { duration } = req.body; // duration in minutes
+      res.json({
+        success: true,
+        data: {
+          totalFeedback: total,
+          usefulnessRate: `${usefulnessRate}%`,
+          departureBufferOffsetMin: profile.departureBufferOffsetMin,
+          categorySensitivity: profile.categorySensitivity,
+          recentFeedback: recent,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
 
-    // For now, just acknowledge - can implement snooze logic later
-    res.json({
-      success: true,
-      message: `Intervention snoozed for ${duration} minutes`,
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-// In-memory feedback store
-interface FeedbackEntry {
-  interventionId: string;
-  useful: boolean;
-  reason?: string;
-  timestamp: string;
+  return router;
 }
-const feedbackHistory: FeedbackEntry[] = [
-  { interventionId: "demo_1", useful: true, reason: "On time", timestamp: new Date(Date.now() - 3600000).toISOString() },
-  { interventionId: "demo_2", useful: true, reason: "Saved travel delay", timestamp: new Date(Date.now() - 7200000).toISOString() },
-];
-
-/**
- * POST /api/interventions/:id/feedback
- * Record user feedback on an intervention
- */
-interventionRoutes.post("/:id/feedback", (req, res) => {
-  try {
-    const { id } = req.params;
-    const { useful, reason } = req.body;
-
-    feedbackHistory.push({
-      interventionId: id as string,
-      useful: Boolean(useful),
-      reason: reason || (useful ? "Helpful" : "Not relevant"),
-      timestamp: new Date().toISOString(),
-    });
-
-    res.json({
-      success: true,
-      message: "Feedback recorded. LifeOS will personalize future recommendations.",
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-
-/**
- * GET /api/interventions/feedback/stats
- * Get usefulness metrics and feedback breakdown
- */
-interventionRoutes.get("/feedback/stats", (_req, res) => {
-  try {
-    const total = feedbackHistory.length;
-    const usefulCount = feedbackHistory.filter(f => f.useful).length;
-    const usefulPercent = total > 0 ? Math.round((usefulCount / total) * 100) : 90;
-
-    res.json({
-      success: true,
-      data: {
-        totalFeedback: total,
-        usefulnessRate: `${usefulPercent}%`,
-        usefulCount,
-        notUsefulCount: total - usefulCount,
-        recentFeedback: feedbackHistory.slice(-5).reverse(),
-      },
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
-});
-

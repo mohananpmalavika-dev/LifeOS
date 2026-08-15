@@ -8,6 +8,7 @@ import {
   ThumbsUp, 
   ThumbsDown, 
   HelpCircle, 
+  Moon,
   ArrowRight,
   ExternalLink
 } from 'lucide-react';
@@ -19,6 +20,7 @@ export function Home() {
   const [briefing, setBriefing] = useState<BriefingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [feedbackGiven, setFeedbackGiven] = useState<Record<string, 'up' | 'down'>>({});
+  const [feedbackImpact, setFeedbackImpact] = useState<string | null>(null);
   const [showWhyModal, setShowWhyModal] = useState(false);
   const [docsChecked, setDocsChecked] = useState<Record<string, boolean>>({
     'Insurance Card': true,
@@ -44,10 +46,14 @@ export function Home() {
     }
   };
 
-  const handleFeedback = async (id: string, useful: boolean, reason?: string) => {
+  const handleFeedback = async (id: string, useful: boolean, reason?: string, category?: string) => {
     try {
-      await interventionsApi.feedback(id, useful, reason);
+      const res = await interventionsApi.feedback(id, useful, reason, category);
       setFeedbackGiven(prev => ({ ...prev, [id]: useful ? 'up' : 'down' }));
+      if (res.data?.message) {
+        setFeedbackImpact(res.data.message);
+        setTimeout(() => setFeedbackImpact(null), 6000);
+      }
     } catch (e) {
       console.error('Error submitting feedback:', e);
     }
@@ -66,10 +72,17 @@ export function Home() {
     );
   }
 
-  const { nowCard, nextCard, attentionItems, greeting, summaryText, feasibilityScore } = briefing;
+  const { nowCard, nextCard, attentionItems, eveningReview, greeting, summaryText, feasibilityScore } = briefing;
 
   return (
     <div className="home-screen">
+      {/* Dynamic Feedback Learning Notification */}
+      {feedbackImpact && (
+        <div className="learning-impact-banner animate-fade">
+          ✨ {feedbackImpact}
+        </div>
+      )}
+
       {/* Daily Briefing Banner */}
       <section className="briefing-header-card">
         <div className="briefing-left">
@@ -81,6 +94,22 @@ export function Home() {
           <div className="score-label">Feasible Day</div>
         </div>
       </section>
+
+      {/* Evening Review Card (if evening or requested) */}
+      {eveningReview && eveningReview.isEvening && (
+        <section className="evening-review-card">
+          <div className="card-tag next"><Moon size={13} /> EVENING REVIEW</div>
+          <div className="evening-body">
+            <div>
+              <h3>Daily Reflection & Tomorrow Preview</h3>
+              <p className="evening-desc">{eveningReview.completedSummary} · {eveningReview.learnedInsight}</p>
+            </div>
+            <button className="view-link-btn" onClick={() => navigate('/tasks')}>
+              View Tasks <ArrowRight size={14} />
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* NOW CARD: Primary Hero */}
       {nowCard && (
@@ -110,8 +139,8 @@ export function Home() {
               <strong>🚗 {nowCard.travelMinutes} mins (from {nowCard.origin})</strong>
             </div>
             <div className="detail-item">
-              <span className="label">Schedule Time</span>
-              <strong>🕒 {new Date(nowCard.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} – {new Date(nowCard.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</strong>
+              <span className="label">Preparation Buffer</span>
+              <strong>⏱️ {nowCard.prepBufferMinutes || 10} mins {nowCard.learnedBufferOffset ? `(Learned: ${nowCard.learnedBufferOffset > 0 ? '+' : ''}${nowCard.learnedBufferOffset}m)` : ''}</strong>
             </div>
           </div>
 
@@ -143,7 +172,7 @@ export function Home() {
             >
               <Navigation size={16} /> Start Navigation <ExternalLink size={14} />
             </button>
-            <button className="action-btn secondary" onClick={() => alert("Marked as on the way! LifeOS will track your arrival.")}>
+            <button className="action-btn secondary" onClick={() => alert("Marked on the way! LifeOS is monitoring arrival.")}>
               I'm on my way
             </button>
             <button className="action-btn ghost" onClick={() => setShowWhyModal(true)}>
@@ -153,7 +182,7 @@ export function Home() {
         </section>
       )}
 
-      {/* NEXT Card & Quick Schedule Preview */}
+      {/* NEXT Card */}
       {nextCard && (
         <section className="next-event-card">
           <div className="card-tag next">NEXT UP</div>
@@ -191,10 +220,10 @@ export function Home() {
                 <div className="card-footer-action">
                   {item.title.includes('Bill') || item.title.includes('Electricity') ? (
                     <div className="btn-group">
-                      <button className="quick-action-btn primary" onClick={() => alert("Reminder added to your Tasks checklist.")}>
+                      <button className="quick-action-btn primary" onClick={() => alert("Reminder added to Tasks.")}>
                         Add to Tasks
                       </button>
-                      <button className="quick-action-btn outline" onClick={() => alert("Payment portal opened.")}>
+                      <button className="quick-action-btn outline" onClick={() => alert("Opening KSEB payment portal.")}>
                         Pay ₹2,431 Now
                       </button>
                     </div>
@@ -213,15 +242,15 @@ export function Home() {
                     <span className="feedback-label">Useful?</span>
                     <button 
                       className={`thumb-btn ${feedbackGiven[item.id] === 'up' ? 'active' : ''}`} 
-                      onClick={() => handleFeedback(item.id, true)} 
+                      onClick={() => handleFeedback(item.id, true, "On time", "COMMUTE")} 
                       title="Helpful"
                     >
                       <ThumbsUp size={14} />
                     </button>
                     <button 
                       className={`thumb-btn ${feedbackGiven[item.id] === 'down' ? 'active' : ''}`} 
-                      onClick={() => handleFeedback(item.id, false, "Not relevant")} 
-                      title="Not useful"
+                      onClick={() => handleFeedback(item.id, false, "Too early", "COMMUTE")} 
+                      title="Alert came too early"
                     >
                       <ThumbsDown size={14} />
                     </button>
@@ -238,14 +267,14 @@ export function Home() {
         <div className="modal-overlay" onClick={() => setShowWhyModal(false)}>
           <div className="why-modal" onClick={e => e.stopPropagation()}>
             <h3>Why am I seeing this departure alert?</h3>
-            <p className="why-subtitle">LifeOS fused multiple privacy-first digital signals to generate this recommendation:</p>
+            <p className="why-subtitle">LifeOS fused multiple privacy-first digital signals to calculate this timing:</p>
 
             <div className="reasoning-chain">
               <div className="chain-step">
                 <div className="step-num">1</div>
                 <div>
                   <strong>Calendar Schedule:</strong>
-                  <p>You have a confirmed appointment <em>"{nowCard.title}"</em> scheduled for {new Date(nowCard.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.</p>
+                  <p>You have a confirmed appointment <em>"{nowCard.title}"</em> at {new Date(nowCard.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.</p>
                 </div>
               </div>
 
@@ -253,14 +282,14 @@ export function Home() {
                 <div className="step-num">2</div>
                 <div>
                   <strong>Location Intelligence:</strong>
-                  <p>You are currently at <strong>{nowCard.reasoning.originPlace}</strong>. The destination is <strong>{nowCard.reasoning.destinationPlace}</strong>.</p>
+                  <p>Current location: <strong>{nowCard.reasoning.originPlace}</strong>. Destination: <strong>{nowCard.reasoning.destinationPlace}</strong>.</p>
                 </div>
               </div>
 
               <div className="chain-step">
                 <div className="step-num">3</div>
                 <div>
-                  <strong>Travel & Buffer Computation:</strong>
+                  <strong>Travel & Adaptive Buffer:</strong>
                   <p>{nowCard.reasoning.travelTimeText} + {nowCard.reasoning.prepBufferText}.</p>
                 </div>
               </div>
@@ -269,7 +298,7 @@ export function Home() {
                 <div className="step-num">4</div>
                 <div>
                   <strong>Confidence & Readiness:</strong>
-                  <p>Confidence score: <strong className="text-success">{nowCard.reasoning.confidence}%</strong>. Required documents were cross-referenced against your local memory.</p>
+                  <p>Confidence score: <strong className="text-success">{nowCard.reasoning.confidence}%</strong>. Required documents verified in local memory.</p>
                 </div>
               </div>
             </div>

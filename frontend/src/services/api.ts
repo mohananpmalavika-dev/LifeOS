@@ -51,6 +51,8 @@ export interface BriefingData {
     location?: { name?: string; address?: string; latitude?: number; longitude?: number };
     minutesUntil: number;
     travelMinutes: number;
+    prepBufferMinutes?: number;
+    learnedBufferOffset?: number;
     leaveByTime: string;
     travelMode: string;
     origin: string;
@@ -83,6 +85,15 @@ export interface BriefingData {
     score?: number;
     timestamp: string;
   }>;
+  eveningReview?: {
+    isEvening: boolean;
+    completedSummary: string;
+    learnedInsight: string;
+    tomorrowPreview: {
+      eventCount: number;
+      firstEvent: string;
+    };
+  };
   feasibilityScore: number;
   totalEvents: number;
   timestamp: string;
@@ -172,12 +183,15 @@ export const askApi = {
 
 export const memoryApi = {
   getAll: () => api.get<{ success: boolean; data: any; totalItems: number }>('/memory'),
+  update: (id: string, updates: { title?: string; detail?: string; semanticType?: string }) =>
+    api.put<{ success: boolean; message: string }>(`/memory/${id}`, updates),
   forget: (id: string) => api.delete<{ success: boolean; message: string }>(`/memory/${id}`),
 };
 
 export const privacyCenterApi = {
   getOverview: () => api.get<{ success: boolean; data: any }>('/privacy-center/overview'),
   clear: (scope: string) => api.post<{ success: boolean; message: string }>('/privacy-center/clear', { scope }),
+  clearCategory: (category: string) => api.post<{ success: boolean; message: string }>('/privacy-center/clear-category', { category }),
   pause: (paused?: boolean) => api.post<{ success: boolean; isPaused: boolean }>('/privacy-center/pause', { paused }),
 };
 
@@ -190,8 +204,8 @@ export const interventionsApi = {
     api.delete<{ success: boolean; message: string }>(`/interventions/${id}`),
   snooze: (id: string, duration: number) =>
     api.post<{ success: boolean; message: string }>(`/interventions/${id}/snooze`, { duration }),
-  feedback: (id: string, useful: boolean, reason?: string) =>
-    api.post<{ success: boolean; message: string }>(`/interventions/${id}/feedback`, { useful, reason }),
+  feedback: (id: string, useful: boolean, reason?: string, category?: string) =>
+    api.post<{ success: boolean; message: string }>(`/interventions/${id}/feedback`, { useful, reason, category }),
   getFeedbackStats: () =>
     api.get<{ success: boolean; data: any }>('/interventions/feedback/stats'),
 };

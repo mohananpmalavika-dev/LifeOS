@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Download, Trash2, PauseCircle, PlayCircle } from 'lucide-react';
+import { Download, Trash2, PauseCircle, PlayCircle, ShieldCheck, HardDrive } from 'lucide-react';
 import { privacyCenterApi } from '../services/api';
 import './Privacy.css';
 
@@ -40,11 +40,24 @@ export function Privacy() {
     window.open('/api/privacy-center/export', '_blank');
   };
 
+  const handleClearCategory = async (catKey: string, catName: string) => {
+    if (window.confirm(`Are you sure you want to delete all stored data for "${catName}"?`)) {
+      try {
+        await privacyCenterApi.clearCategory(catKey);
+        alert(`${catName} data cleared.`);
+        loadOverview();
+      } catch (e) {
+        console.error('Error clearing category:', e);
+      }
+    }
+  };
+
   const handleClearLocation = async () => {
     if (window.confirm("Are you sure you want to delete today's raw location samples?")) {
       try {
         await privacyCenterApi.clear('today-location');
         alert("Today's location history has been cleared.");
+        loadOverview();
       } catch (e) {
         console.error('Error clearing location:', e);
       }
@@ -55,14 +68,23 @@ export function Privacy() {
     return <div className="loading-state">Loading Privacy Center...</div>;
   }
 
-  const { categories } = overview;
+  const { categories, inventory, dataSizeKb, retentionPolicy, encryptionStatus } = overview;
+
+  const inventoryRows = [
+    { key: 'calendar', name: '📅 Calendar Schedule', count: inventory?.calendar?.count || 0, desc: 'Understood events and travel buffers' },
+    { key: 'places', name: '📍 Learned Places', count: inventory?.places?.count || 0, desc: 'Clustered locations (Home, Work, Hospital)' },
+    { key: 'people', name: '👥 Recognized People', count: inventory?.people?.count || 0, desc: 'Frequent contacts & meeting organizers' },
+    { key: 'documents', name: '📄 Remembered Documents', count: inventory?.documents?.count || 0, desc: 'Insurance cards & test reports' },
+    { key: 'routines', name: '🔁 Learned Routines', count: inventory?.routines?.count || 0, desc: 'Commute timings & habit patterns' },
+    { key: 'notifications', name: '🔔 Processed Notifications', count: inventory?.notifications?.count || 0, desc: 'Extracted bills & appointment notices' },
+  ];
 
   return (
     <div className="privacy-page">
       <div className="privacy-header">
         <div>
           <h2>Privacy Center</h2>
-          <p className="subtitle">Complete transparency and total user control over your data</p>
+          <p className="subtitle">Complete transparency and total control over what LifeOS understands</p>
         </div>
 
         <div className="privacy-top-actions">
@@ -76,11 +98,63 @@ export function Privacy() {
         </div>
       </div>
 
+      {/* Real Disk & Encryption Stats Banner */}
+      <div className="privacy-meta-banner">
+        <div className="meta-pill">
+          <HardDrive size={16} className="text-primary" />
+          <span>Local Storage on Device: <strong>{dataSizeKb} KB</strong></span>
+        </div>
+        <div className="meta-pill">
+          <ShieldCheck size={16} className="text-success" />
+          <span>Encryption: <strong>{encryptionStatus}</strong></span>
+        </div>
+        <div className="meta-pill">
+          <span>Retention: <strong>{retentionPolicy}</strong></span>
+        </div>
+      </div>
+
+      {/* "What LifeOS Knows About Me" Inventory Audit Table */}
+      <section className="inventory-section">
+        <h3>What LifeOS Knows About Me</h3>
+        <p className="section-subtitle">Real-time inventory of all stored contextual records on this device.</p>
+
+        <div className="inventory-table-wrapper">
+          <table className="inventory-table">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Records Understood</th>
+                <th>Description</th>
+                <th>User Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {inventoryRows.map(row => (
+                <tr key={row.key}>
+                  <td className="cat-name">{row.name}</td>
+                  <td>
+                    <span className="count-badge">{row.count} items</span>
+                  </td>
+                  <td className="cat-desc">{row.desc}</td>
+                  <td>
+                    <div className="row-actions">
+                      <button className="table-action-btn delete" onClick={() => handleClearCategory(row.key, row.name)}>
+                        <Trash2 size={13} /> Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       {/* Highlights Grid */}
       <div className="privacy-cards-grid">
         <div className="priv-category-card device">
           <div className="card-tag">Stays On Device Only</div>
-          <h3>Local-First Sensors</h3>
+          <h3>Local-First Architecture</h3>
           <ul>
             {categories.onDeviceOnly.map((c: any, idx: number) => (
               <li key={idx}>
@@ -105,7 +179,7 @@ export function Privacy() {
 
       {/* Control Actions */}
       <div className="privacy-actions-section">
-        <h3>Privacy & Data Controls</h3>
+        <h3>Data Management</h3>
         <div className="actions-grid">
           <div className="action-control-card">
             <div>

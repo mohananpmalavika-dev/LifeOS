@@ -37,13 +37,11 @@ export function Layout({ children }: LayoutProps) {
   const [showReliability, setShowReliability] = useState(false);
 
   useEffect(() => {
-    // Check if onboarding completed
     const completed = localStorage.getItem('lifeos_onboarding_completed');
     if (!completed) {
       setShowOnboarding(true);
     }
 
-    // Load focus mode
     stateApi.getFocusMode().then(res => {
       if (res.data?.mode) setFocusMode(res.data.mode);
     }).catch(() => {});
@@ -69,10 +67,11 @@ export function Layout({ children }: LayoutProps) {
     { path: '/calendar', label: 'Calendar', icon: <CalendarIcon size={20} /> },
     { path: '/tasks', label: 'Tasks', icon: <CheckSquare size={20} /> },
     { path: '/ask', label: 'Ask LifeOS', icon: <MessageSquare size={20} /> },
+    { path: '/memory', label: 'Memory', icon: <Brain size={20} /> },
   ];
 
   const moreNav = [
-    { path: '/memory', label: 'Memory (What LifeOS knows)', icon: <Brain size={18} /> },
+    { path: '/context', label: 'Why LifeOS Knows', icon: <Sparkles size={18} /> },
     { path: '/timeline', label: 'Timeline History', icon: <Clock size={18} /> },
     { path: '/location', label: 'Location & Places', icon: <Navigation size={18} /> },
     { path: '/people', label: 'People & Contacts', icon: <Users size={18} /> },
@@ -96,7 +95,7 @@ export function Layout({ children }: LayoutProps) {
           <div className="logo" onClick={() => navigate('/')}>
             <div className="logo-badge">L</div>
             <span className="logo-title">LifeOS</span>
-            <span className="version-pill">v1.0</span>
+            <span className="version-pill">v1.1</span>
           </div>
         </div>
 
