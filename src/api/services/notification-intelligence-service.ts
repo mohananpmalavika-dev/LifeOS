@@ -46,7 +46,7 @@ export class NotificationIntelligenceService {
   constructor(db?: Database.Database) {
     const dbPath = process.env.DB_PATH || path.join(process.cwd(), 'lifeos.db');
     this.db = db || new Database(dbPath);
-    this.entityResolver = new EntityResolutionEngine();
+    this.entityResolver = new EntityResolutionEngine(this.db);
     this.initializeTables();
   }
 
