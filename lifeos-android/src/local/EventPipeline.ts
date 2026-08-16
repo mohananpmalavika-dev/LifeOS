@@ -13,6 +13,7 @@ import { NotificationCollector } from '../agent/notification/NotificationCollect
 import { CalendarCollector } from '../agent/calendar/CalendarCollector';
 import { LocationCollector } from '../agent/location/LocationCollector';
 import { ActivityCollector } from '../agent/activity/ActivityCollector';
+import { DeviceStateCollector } from '../agent/device/DeviceStateCollector';
 
 export interface PipelineConfig {
   userId: string;

@@ -18,6 +18,7 @@ export enum EventType {
   APP_USAGE = 'APP_USAGE',
   BLUETOOTH_DEVICE = 'BLUETOOTH_DEVICE',
   SENSOR_DATA = 'SENSOR_DATA',
+  DEVICE_STATE = 'DEVICE_STATE',
 }
 
 export enum SourceType {
@@ -179,4 +180,12 @@ export interface DeviceConfig {
     retryAttempts: number;
     wifiOnly?: boolean;
   };
+}
+
+export interface DeviceStateEventData {
+  batteryLevel: number;
+  charging: boolean;
+  online: boolean;
+  networkType?: string;
+  powerSaveMode?: boolean;
 }

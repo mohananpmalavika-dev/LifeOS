@@ -1,4 +1,11 @@
 
+export interface SignalQuality {
+  confidence: number;
+  observedAt: string;
+  ageSeconds: number;
+  source: string;
+}
+
 export interface ContextObservation<T> {
   value: T;
   source: 'ANDROID_SENSOR' | 'GPS' | 'CALENDAR' | 'NOTIFICATION' | 'DATABASE' | 'USER' | 'INFERENCE';
