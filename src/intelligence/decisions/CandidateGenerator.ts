@@ -26,35 +26,38 @@ export class CandidateGenerator {
       const eventStart = new Date(event.startTime);
       const minutesUntil = Math.round((eventStart.getTime() - now.getTime()) / 60000);
 
-      const travelMin = event.travelMinutes || 25;
-      const prepMin = event.prepMinutes || 10;
+      const travelMin = typeof event.travelMinutes === 'number' ? event.travelMinutes : 0;
+      const prepMin = typeof event.prepMinutes === 'number' ? event.prepMinutes : 5;
       const bufferMin = Math.max(5, 10 + learnedBufferOffset);
       const totalLeadTimeMin = travelMin + prepMin + bufferMin;
       const minutesUntilLeave = minutesUntil - totalLeadTimeMin;
+
+      const hasValidTravel = travelMin > 0;
+      const travelConfidence = hasValidTravel ? 0.85 : 0.20;
 
       // Check if already at destination
       const isAlreadyThere = situation.location.place && event.location?.name && 
         situation.location.place.toLowerCase().includes(event.location.name.toLowerCase());
 
-      if (!isAlreadyThere && minutesUntil > 0 && minutesUntil <= 240) {
+      if (!isAlreadyThere && minutesUntil > 0 && minutesUntil <= 240 && hasValidTravel) {
         let urgency = 0.45;
         if (minutesUntilLeave <= 0) urgency = 0.98;
         else if (minutesUntilLeave <= 15) urgency = 0.90;
         else if (minutesUntilLeave <= 45) urgency = 0.75;
 
         const importance = 0.92;
-        const locConf = typeof situation.location.confidence === 'number' ? situation.location.confidence : 0.50;
+        const locConf = typeof situation.location.confidence === 'number' ? situation.location.confidence : 0.0;
         const overallConf = Number((
           0.98 * 0.35 +
           locConf * 0.35 +
-          0.85 * 0.15 +
+          travelConfidence * 0.15 +
           0.80 * 0.15
         ).toFixed(2));
 
         const confidenceBreakdown: ConfidenceBreakdown = {
           calendar: 0.98,
           location: locConf,
-          travel: 0.85,
+          travel: travelConfidence,
           preparation: 0.80,
           userPattern: 0.75,
           overall: overallConf,

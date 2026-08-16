@@ -268,8 +268,8 @@ export class NextBestActionEngine {
     const profile = this.personalization.getProfile();
 
     // 6. Real Device State from SQLite
-    let deviceOnline = true;
-    let deviceBattery = 85;
+    let deviceOnline = false;
+    let deviceBattery = 0;
     try {
       const devRow = this.db.prepare(`
         SELECT battery_level, is_online, observed_at FROM device_state 
