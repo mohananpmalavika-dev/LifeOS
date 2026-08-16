@@ -21,11 +21,8 @@ export function Home() {
   const [loading, setLoading] = useState(true);
   const [feedbackGiven, setFeedbackGiven] = useState<Record<string, 'up' | 'down'>>({});
   const [feedbackImpact, setFeedbackImpact] = useState<string | null>(null);
+  const [docsChecked, setDocsChecked] = useState<Record<string, boolean>>({});
   const [showWhyModal, setShowWhyModal] = useState(false);
-  const [docsChecked, setDocsChecked] = useState<Record<string, boolean>>({
-    'Insurance Card': true,
-    'Medical Records': true,
-  });
 
   useEffect(() => {
     loadBriefing();
@@ -121,9 +118,11 @@ export function Home() {
           <div className="now-header">
             <div>
               <h2>{nowCard.title}</h2>
-              <p className="event-location-text">
-                📍 {nowCard.location?.name || 'City Specialty Hospital'} · {nowCard.location?.address || 'MG Road, Kochi'}
-              </p>
+              {nowCard.location?.name && (
+                <p className="event-location-text">
+                  📍 {nowCard.location.name} {nowCard.location.address ? `· ${nowCard.location.address}` : ''}
+                </p>
+              )}
             </div>
             <div className="departure-countdown-badge">
               <span className="leave-label">LEAVE BY</span>
@@ -136,39 +135,41 @@ export function Home() {
           <div className="now-details-strip">
             <div className="detail-item">
               <span className="label">Estimated Travel</span>
-              <strong>🚗 {nowCard.travelMinutes} mins (from {nowCard.origin})</strong>
+              <strong>🚗 {nowCard.travelMinutes} mins {nowCard.origin ? `(from ${nowCard.origin})` : ''}</strong>
             </div>
             <div className="detail-item">
               <span className="label">Preparation Buffer</span>
-              <strong>⏱️ {nowCard.prepBufferMinutes || 10} mins {nowCard.learnedBufferOffset ? `(Learned: ${nowCard.learnedBufferOffset > 0 ? '+' : ''}${nowCard.learnedBufferOffset}m)` : ''}</strong>
+              <strong>⏱️ {nowCard.prepBufferMinutes || 5} mins {nowCard.learnedBufferOffset ? `(Learned: ${nowCard.learnedBufferOffset > 0 ? '+' : ''}${nowCard.learnedBufferOffset}m)` : ''}</strong>
             </div>
           </div>
 
           {/* Document Readiness Checklist */}
-          <div className="prep-checklist-box">
-            <div className="checklist-title">
-              <FileText size={16} /> Required Preparation Documents
+          {nowCard.documents && nowCard.documents.length > 0 && (
+            <div className="prep-checklist-box">
+              <div className="checklist-title">
+                <FileText size={16} /> Required Preparation Documents
+              </div>
+              <div className="docs-pills-row">
+                {nowCard.documents.map(doc => (
+                  <div 
+                    key={doc.name} 
+                    className={`doc-pill ${docsChecked[doc.name] ? 'ready' : ''}`}
+                    onClick={() => toggleDoc(doc.name)}
+                  >
+                    {docsChecked[doc.name] ? <CheckCircle2 size={16} className="text-success" /> : <div className="doc-box" />}
+                    <span>{doc.name}</span>
+                    <span className="doc-status">{docsChecked[doc.name] ? 'Ready' : 'Pending'}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="docs-pills-row">
-              {nowCard.documents?.map(doc => (
-                <div 
-                  key={doc.name} 
-                  className={`doc-pill ${docsChecked[doc.name] ? 'ready' : ''}`}
-                  onClick={() => toggleDoc(doc.name)}
-                >
-                  {docsChecked[doc.name] ? <CheckCircle2 size={16} className="text-success" /> : <div className="doc-box" />}
-                  <span>{doc.name}</span>
-                  <span className="doc-status">{docsChecked[doc.name] ? 'Ready' : 'Pending'}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
 
           {/* Action Row */}
           <div className="now-actions-row">
             <button 
               className="action-btn primary"
-              onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(nowCard.location?.address || nowCard.location?.name || 'City Hospital')}`, '_blank')}
+              onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(nowCard.location?.address || nowCard.location?.name || 'Destination')}`, '_blank')}
             >
               <Navigation size={16} /> Start Navigation <ExternalLink size={14} />
             </button>
